@@ -9,8 +9,8 @@ main :: IO ()
 main = do
   print $ fG earth moon
   print . normalize . p $ moon
-  let dt = 1
-  let zoom = 3e6
+  let dt = 100
+  let zoom = 3e7
   let bds = [earth]
   let abds = moon:bds
   print $ fA moon bds
@@ -18,6 +18,6 @@ main = do
   print $ dP moon bds dt
   let res = (500, 500)
   let disp = InWindow "Hello" res (0, 0)
-  let sts = states dt 1 abds
-  simulate disp white 0 0 (\sec -> sts !! floor sec)
+  let sts = states dt zoom abds
+  animate disp white (\sec -> sts !! (36 * floor sec))
 

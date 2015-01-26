@@ -21,11 +21,11 @@ fG a b = dp ||* f
            
 earth = Body 5.974e24 [0,0] [0,0] --29.7867]
 moon = Body 7.349e22 [3.844e8,0] [0,1000]
-sun = Body 1.989e30 [-ae,0] [0,0]
+--sun = Body 1.989e30 [-ae,0] [0,0]
 
 fA :: Body -> [Body] -> Vec
 --foldl :: (Vec -> Body -> Vec) -> Vec -> [Body] -> Vec
-fA a l = foldl (\v b -> fG b a |+ v) (repeat 0) l
+fA a l = foldl (\v b -> (fG b a) |+ v) (repeat 0) l
 
 vA :: Body -> [Body] -> FT -> Vec
 vA ref l dt = v1
@@ -35,7 +35,7 @@ vA ref l dt = v1
       v1 = v0 |+ v ref
 
 dP :: Body -> [Body] -> FT -> Body
-dP ref l dt = Body (mass ref) (vAvg ||* dt |+ p ref) (v1)
+dP ref l dt = Body (mass ref) ((vAvg ||* dt) |+ p ref) (v1)
     where
       v0 = v ref
       v1 = vA ref l dt
