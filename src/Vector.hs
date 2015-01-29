@@ -1,14 +1,19 @@
 module Vector where
 
+x :: [a] -> a
 x v = v !! 0
+y :: [a] -> a
 y v = v !! 1
+z :: [a] -> a
 z v = v !! 2
 
-bmap = zipWith
-amap :: Num a => (a -> a -> a) -> [a] -> a -> [a]
-amap f a b = map (`f` b) a
+applyScalar :: Num a => (a -> a -> a) -> [a] -> a -> [a]
+applyScalar f a b = map (`f` b) a
 
-distanceSqrd a b = sum . map (^2) $ a |- b
+distanceSqrd :: Num a => [a] -> [a] -> a
+distanceSqrd a b = sum . map (^exp2) $ a |- b
+    where
+      exp2 = 2 :: Int
 --distance = sqrt distanceSqrd
 
 len :: (Floating a) => [a] -> a
@@ -18,15 +23,15 @@ normalize :: (Floating a) => [a] -> [a]
 normalize a = a ||/ len a
 
 (|+) :: (Num a) => [a] -> [a] -> [a]
-(|+) = bmap (+)
+(|+) = zipWith (+)
 (|-) :: (Num a) => [a] -> [a] -> [a]
-(|-) = bmap (-)
+(|-) = zipWith (-)
 (|*) :: (Num a) => [a] -> [a] -> [a]
-(|*) = bmap (*)
+(|*) = zipWith (*)
 (|/) :: (Fractional a) => [a] -> [a] -> [a]
-(|/) = bmap (/)
+(|/) = zipWith (/)
 (||*) :: (Fractional a) => [a] -> a -> [a]
-(||*) = amap (*)
+(||*) = applyScalar (*)
 (||/) :: (Fractional a) => [a] -> a -> [a]
-(||/) = amap (/)
+(||/) = applyScalar (/)
 
