@@ -1,5 +1,7 @@
 module Vector where
 
+type Vec = [Double]
+
 x :: [a] -> a
 x v = v !! 0
 y :: [a] -> a
@@ -34,4 +36,3 @@ normalize a = a ||/ len a
 (||*) = applyScalar (*)
 (||/) :: (Fractional a) => [a] -> a -> [a]
 (||/) = applyScalar (/)
-

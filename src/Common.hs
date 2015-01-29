@@ -1,5 +1,5 @@
 module Common where
 
-type FT = Double
-type Vec = [FT]
+import Vector
 
+data Body = Body { mass :: Double, pos :: Vec, vel :: Vec } deriving (Eq, Show)

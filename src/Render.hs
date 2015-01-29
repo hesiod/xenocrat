@@ -17,9 +17,8 @@ picturize zoom b = Color (makeColor 0 0 0 1) $ Translate x y $ circleSolid 3
 picturizeState :: Float -> State -> Picture
 picturizeState zoom s = Pictures $ map (picturize zoom) s
 
-updateState :: FT -> State -> State
+updateState :: Double -> State -> State
 updateState dt l = map updatePoint l
     where
       updatePoint :: Body -> Body
       updatePoint b = let l' = filter (/= b) l in dP b l' dt
-

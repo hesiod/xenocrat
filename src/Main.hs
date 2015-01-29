@@ -3,7 +3,7 @@ module Main where
 import GHC.Float
 import Data.Monoid
 
-import Physics
+import Constants
 import Graphics.Gloss
 import Render
 
@@ -19,11 +19,3 @@ main = do
       render state = mconcat [static, picturizeState zoom state];
       update _ dt = updateState (timeScale * float2Double dt);
    in simulate disp white stepsPerSecond bds render update
-
-{-print $ fG earth moon
-  print . normalize . p $ moon
-  print $ fA moon bds
-  print $ vA moon bds dt
-  print $ dP moon bds dt
--}
-
