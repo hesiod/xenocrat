@@ -12,7 +12,7 @@ rP :: FT -> Float -> Body -> Picture
 rP dt zoom b = Color (makeColor 0 0 0 1) $ Translate x y $ circleSolid 1
           where
             (x':y':_) = map double2Float $ p b
-            (x, y) = trace ("x:y " ++ (show x') ++ " " ++ (show y')) (x'/zoom, y'/zoom)
+            (x, y) = trace ("x:y " ++ show x' ++ " " ++ show y') (x'/zoom, y'/zoom)
 
 rPs :: FT -> Float -> State -> Picture
 rPs dt zoom s = Pictures $ map (rP dt zoom) s
