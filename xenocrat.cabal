@@ -13,13 +13,13 @@ name:                xenocrat
 version:             0.1.0.0
 
 -- A short (one-line) description of the package.
--- synopsis:
+synopsis:            Orbital Mechanics Simulator
 
 -- A longer description of the package.
 -- description:
 
 -- The license under which the package is released.
--- license:
+license:             GPL-3
 
 -- The file containing the license text.
 license-file:        LICENSE
@@ -34,7 +34,7 @@ maintainer:          tobias@markus-regensburg.de
 -- A copyright notice.
 -- copyright:
 
--- category:
+category:            Simulation
 
 build-type:          Simple
 
@@ -45,14 +45,13 @@ extra-source-files:  README.md
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
 
-
 executable xenocrat
   ghc-options:         -threaded -Wall -O3
   -- .hs or .lhs file containing the Main module.
   main-is:             Main.hs
 
   -- Modules included in this executable, other than Main.
-  other-modules:       Common, Physics, Render, Vector
+  other-modules:       Common, Constants, Physics, Render, Vector
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
@@ -66,3 +65,9 @@ executable xenocrat
   -- Base language which the package is written in.
   default-language:    Haskell2010
 
+test-suite tests
+  type:             exitcode-stdio-1.0
+  main-is:          Test.hs
+  hs-source-dirs:   src, test
+  build-depends:    base >=4.7 && <4.8, QuickCheck, test-framework-quickcheck2
+  default-language: Haskell2010
