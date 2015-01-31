@@ -1,32 +1,33 @@
+{-# LANGUAGE TypeFamilies #-}
+
 module Physics where
 
-import Vector
+import Data.VectorSpace
 import Common
-import Constants
 
-fG :: Body -> Body -> Vec
-fG a b = dp ||* f
+fG :: (InnerSpace v, Floating s, s ~ Scalar v) => Body v -> Body v -> v
+fG a b = ndp ^* f
     where
-      f = gamma * mass a * mass b / distanceSqrd (pos a) (pos b)
-      dp = normalize $ pos a |- pos b
+      dp = pos b ^-^ pos a
+      gamma = 6.6738e-11
+      f = gamma * mass a * mass b / magnitudeSq dp
+      ndp = normalized dp
 
-fA :: Body -> [Body] -> Vec
---foldl :: (Vec -> Body -> Vec) -> Vec -> [Body] -> Vec
-fA a = foldl (\v b -> fG b a |+ v) (repeat 0)
+fA :: (InnerSpace v, Floating s, s ~ Scalar v) => Body v -> [Body v] -> v
+fA ref bodies = sumV . map (fG ref) $ bodies
 
-vA :: Body -> [Body] -> Double -> Vec
-vA ref l dt = v1
+vA :: (InnerSpace v, Floating s, s ~ Scalar v) => Body v -> [Body v] -> s -> v
+vA ref bodies dt = vel ref ^+^ v
     where
-      ffA = fA ref l
-      v0 = (ffA ||* dt) ||/ mass ref
-      v1 = v0 |+ vel ref
+      ffA = fA ref bodies
+      v = (ffA ^* dt) ^/ mass ref
 
-dP :: Body -> [Body] -> Double -> Body
-dP ref l dt = Body (mass ref) ((vAvg ||* dt) |+ pos ref) v1
+dP :: (InnerSpace v, Floating s, s ~ Scalar v) => Body v -> [Body v] -> s -> Body v
+dP ref bodies dt = Body (mass ref) ((vAvg ^* dt) ^+^ pos ref) v1
     where
       v0 = vel ref
-      v1 = vA ref l dt
-      vAvg = (v0 |+ v1) ||/ 2
+      v1 = vA ref bodies dt
+      vAvg = (v0 ^+^ v1) ^/ 2
 
 {-
 accelM :: Body -> Body -> Vec

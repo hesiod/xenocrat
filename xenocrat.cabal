@@ -49,9 +49,9 @@ cabal-version:       >=1.10
 
 library
   ghc-options:         -threaded -Wall -O3
-  exposed-modules:   Common, Constants, Physics, Vector
+  exposed-modules:     Common, Constants, Physics
   -- other-modules:
-  -- other-extensions:
+  other-extensions:    TypeFamilies
   build-depends:       base >=4.7 && <4.8, units, units-defs, vector-space
   hs-source-dirs:      src
   default-language:    Haskell2010
@@ -61,7 +61,7 @@ executable xenocrat
   main-is:             Main.hs
   other-modules:       Render
   -- other-extensions:
-  build-depends:       base >=4.7 && <4.8, xenocrat, gloss
+  build-depends:       base >=4.7 && <4.8, xenocrat, gloss, vector-space
   hs-source-dirs:      src-exec
   default-language:    Haskell2010
 
