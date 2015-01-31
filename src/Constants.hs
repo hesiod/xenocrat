@@ -1,5 +1,7 @@
 module Constants where
 
+import Data.Metrology
+
 import Common
 
 gamma :: Double

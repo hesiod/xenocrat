@@ -2,9 +2,9 @@ module Main where
 
 import GHC.Float
 import Data.Monoid
+import Graphics.Gloss
 
 import Constants
-import Graphics.Gloss
 import Render
 
 main :: IO ()
