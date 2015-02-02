@@ -28,29 +28,50 @@ projection xl xu yl yu zl zu = do
 reshape screen s@(Size w h) = do
   viewport $= (Position 0 0, s)
   screen $= (w, h)
+  print $ (w, h)
 
 idle :: IORef (State (GLfloat, GLfloat)) -> IO ()
 idle state = do
   s <- get state
-  state $= updateState 10 s
+  state $= updateState 1000 s
   postRedisplay Nothing
 
 displayState :: IORef (State (GLfloat, GLfloat)) -> IORef (GLint,GLint) -> IO ()
 displayState state screen = do
   s <- get state
   scr <- get screen
+
   blend $= Enabled
   blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
+
   clearColor $= Color4 1 1 1 0
   clear [ColorBuffer]
---  projection (-1) 1 (-0.8) 0.8 (-0.5) 0.5
-{-   matrixMode $= Projection
+  loadIdentity
+
+  matrixMode $= Projection
   loadIdentity
   let near = 0
       far = 5
       right = 1
       top = 1
   frustum (-right) right (-top) top near far
-  matrixMode $= Modelview 0 -}
+  matrixMode $= Modelview 0
+
+  displayCross
   picturizeState scr (3e6,1e1) s
   swapBuffers
+
+displayCross :: IO ()
+displayCross = do
+  loadIdentity
+  color red
+  lineWidth $= 0.5
+  renderPrimitive Lines $ do
+    vertex $ (Vertex3 (-1) 0 0 :: Vertex3 GLfloat)
+    vertex $ (Vertex3 1 0 0    :: Vertex3 GLfloat)
+  renderPrimitive Lines $ do
+    vertex $ (Vertex3 0 (-1) 0 :: Vertex3 GLfloat)
+    vertex $ (Vertex3 0 1 0    :: Vertex3 GLfloat)
+  renderPrimitive Lines $ do
+    vertex $ (Vertex3 0 0 (-1) :: Vertex3 GLfloat)
+    vertex $ (Vertex3 0 0 1    :: Vertex3 GLfloat)

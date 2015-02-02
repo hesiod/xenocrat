@@ -21,11 +21,11 @@ scaleCoordinates scr zoom v = (x/scrX, y/scrY)
       (scrX, scrY) = (fromIntegral *** fromIntegral) scr
       (x:y:_) = map snd . decompose . (^/zoom) $ v
 
-black :: Color4 GLfloat
+black, blue, red, green :: Color4 GLfloat
 black = Color4 0 0 0 1
-
-blue :: Color4 GLfloat
 blue = Color4 0 0 1 1
+red = Color4 1 0 0 1
+green = Color4 0 1 0 1
 
 --rP pts = renderPrimitive Lines $ mapM_ (\(x, y, z) -> vertex $ Vertex3 x y z) pts
 
@@ -39,27 +39,27 @@ picturizeV scr zoom b = do
 --  renderQuadric style $ Sphere 0.1 30 30
   currentColor $= blue
   renderPrimitive Lines $ do
-    vertex null
+    vertex nullV
     vertex $ Vertex3 xV yV 0
   translate $ Vector3 xV yV 0
   rotate deg $ Vector3 0 0 (1::GLfloat)
   renderPrimitive Lines $ do
-    vertex null
+    vertex nullV
     vertex $ Vertex3 xA yA 0
   rotate deg' $ Vector3 0 0 (1::GLfloat)
   renderPrimitive Lines $ do
-    vertex null
+    vertex nullV
     vertex $ Vertex3 xA yA 0
   where
-      style = QuadricStyle (Just Smooth) NoTextureCoordinates Outside LineStyle
-      null = Vertex3 0 0 0 :: Vertex3 GLfloat
+      fac = 1/0.07
+      deg = 135 + 10
+      deg' = 360 - 2*deg
+--      style = QuadricStyle (Just Smooth) NoTextureCoordinates Outside LineStyle
+      nullV = Vertex3 0 0 0 :: Vertex3 GLfloat
       (zoomR, zoomV) = zoom
       (xR, yR) = scaleCoordinates scr zoomR (pos b)
       (xV, yV) = scaleCoordinates scr zoomV (vel b)
-      (xA, yA) = scaleCoordinates scr (zoomV*10) (vel b)
-      fac = 0.07 :: GLfloat
-      deg = 135 + 10
-      deg' = 360 - 2*deg
+      (xA, yA) = scaleCoordinates scr (zoomV*fac) (vel b)
 
 picturizeState :: (HasBasis v, AdditiveGroup v, Show s, Fractional s, MatrixComponent s, VertexComponent s, s ~ Scalar v) => Screen -> Zoom s -> State v -> IO ()
 picturizeState scr zoom = mapM_ (picturizeV scr zoom)
