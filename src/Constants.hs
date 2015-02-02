@@ -1,10 +1,11 @@
 module Constants where
 
 import Data.Metrology
+import Graphics.Rendering.OpenGL
 
 import Common
 
-type FT = Float
+type FT = GLfloat
 
 ae :: FT
 ae = 1.4960e11
@@ -14,7 +15,7 @@ moonPeriod = 2.360448e6
 type Body2 = Body (FT, FT)
 
 earth :: Body2
-earth = Body 5.974e24 (0,0) (0,0)--29.7867e3)
+earth = Body 5.974e24 (0,0) (0,0) --29.7867e3)
 moon :: Body2
 moon = Body 7.349e22 (3.844e8,0) (0,1e3) -- +29.7867e3)
 sun :: Body2

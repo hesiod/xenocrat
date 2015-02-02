@@ -6,8 +6,13 @@ import Data.Monoid
 import Graphics.Gloss
 
 import Constants
-import Render
+--import Render
+import RenderGL
+import GL
 
+main = glMain
+
+    {-
 main :: IO ()
 main =
   let zoom = (3e6,1e1);
@@ -20,3 +25,4 @@ main =
       render state = mconcat [picturizeState zoom state, static];
       update _ dt = updateState (timeScale * dt);
    in simulate disp white stepsPerSecond bds render update
+-}
