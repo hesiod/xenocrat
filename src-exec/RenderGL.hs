@@ -5,21 +5,20 @@ module RenderGL where
 import Data.VectorSpace
 import Data.Basis
 import Graphics.UI.GLUT
-import Graphics.Rendering.OpenGL
 import Control.Arrow
 
 import Physics
 import Common
 
 type State v = [Body v]
-type Zoom s = (s, s)
-type Screen = (GLint, GLint)
+type Pair s = (s, s)
+type Screen s = Pair s
+type Zoom s = Pair s
 
-scaleCoordinates :: (HasBasis v, AdditiveGroup v, Show s, Fractional s, s ~ Scalar v) => Screen -> s -> v -> (s, s)
-scaleCoordinates scr zoom v = (x/scrX, y/scrY)
+scaleCoordinates :: (HasBasis v, AdditiveGroup v, Show s, Fractional s, s ~ Scalar v) => Screen s -> s -> v -> (s, s)
+scaleCoordinates scr zoom v = (a/) *** (b/) $ scr
     where
-      (scrX, scrY) = (fromIntegral *** fromIntegral) scr
-      (x:y:_) = map snd . decompose . (^/zoom) $ v
+      (a:b:_) = map snd . decompose . (^/zoom) $ v
 
 black, blue, red, green :: Color4 GLfloat
 black = Color4 0 0 0 1
@@ -27,9 +26,7 @@ blue = Color4 0 0 1 1
 red = Color4 1 0 0 1
 green = Color4 0 1 0 1
 
---rP pts = renderPrimitive Lines $ mapM_ (\(x, y, z) -> vertex $ Vertex3 x y z) pts
-
-picturizeV :: (HasBasis v, AdditiveGroup v, Show s, Fractional s, MatrixComponent s, VertexComponent s, s ~ Scalar v) => Screen -> Zoom s -> Body v -> IO ()
+picturizeV :: (HasBasis v, AdditiveGroup v, Show s, Fractional s, MatrixComponent s, VertexComponent s, s ~ Scalar v) => Screen s -> Zoom s -> Body v -> IO ()
 picturizeV scr zoom b = do
   loadIdentity
   lineWidth $= 2
@@ -61,7 +58,7 @@ picturizeV scr zoom b = do
       (xV, yV) = scaleCoordinates scr zoomV (vel b)
       (xA, yA) = scaleCoordinates scr (zoomV*fac) (vel b)
 
-picturizeState :: (HasBasis v, AdditiveGroup v, Show s, Fractional s, MatrixComponent s, VertexComponent s, s ~ Scalar v) => Screen -> Zoom s -> State v -> IO ()
+picturizeState :: (HasBasis v, AdditiveGroup v, Show s, Fractional s, MatrixComponent s, VertexComponent s, s ~ Scalar v) => Screen s -> Zoom s -> State v -> IO ()
 picturizeState scr zoom = mapM_ (picturizeV scr zoom)
 
 updateState :: forall v s. (InnerSpace v, Floating s, Eq s, Eq v, s ~ Scalar v) => s -> State v -> State v

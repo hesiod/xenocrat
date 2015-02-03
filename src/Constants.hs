@@ -1,6 +1,5 @@
 module Constants where
 
-import Data.Metrology
 import Graphics.Rendering.OpenGL
 
 import Common

@@ -1,12 +1,12 @@
 module GL where
 
 import Graphics.UI.GLUT
-import Graphics.Rendering.OpenGL
 import Data.IORef
 
 import RenderGL
 import Constants
 
+glMain :: IO ()
 glMain = do
   (progName, _) <- getArgsAndInitialize
   initialDisplayMode $= [DoubleBuffered, RGBMode, WithDepthBuffer, Multisampling, WithSamplesPerPixel 4]
@@ -19,16 +19,11 @@ glMain = do
   reshapeCallback $= Just (reshape screen)
   mainLoop
 
-projection xl xu yl yu zl zu = do
-  matrixMode $= Projection
-  loadIdentity
-  ortho xl xu yl yu zl zu
-  matrixMode $= Modelview 0
-
+reshape :: IORef (Screen GLfloat) -> Size -> IO ()
 reshape screen s@(Size w h) = do
   viewport $= (Position 0 0, s)
-  screen $= (w, h)
-  print $ (w, h)
+  screen $= (fromIntegral w, fromIntegral h)
+  print (w, h)
 
 idle :: IORef (State (GLfloat, GLfloat)) -> IO ()
 idle state = do
@@ -36,7 +31,7 @@ idle state = do
   state $= updateState 1000 s
   postRedisplay Nothing
 
-displayState :: IORef (State (GLfloat, GLfloat)) -> IORef (GLint,GLint) -> IO ()
+displayState :: IORef (State (Pair GLfloat)) -> IORef (Screen GLfloat) -> IO ()
 displayState state screen = do
   s <- get state
   scr <- get screen
@@ -67,11 +62,11 @@ displayCross = do
   color red
   lineWidth $= 0.5
   renderPrimitive Lines $ do
-    vertex $ (Vertex3 (-1) 0 0 :: Vertex3 GLfloat)
-    vertex $ (Vertex3 1 0 0    :: Vertex3 GLfloat)
+    vertex (Vertex3 (-1) 0 0 :: Vertex3 GLfloat)
+    vertex (Vertex3 1 0 0    :: Vertex3 GLfloat)
   renderPrimitive Lines $ do
-    vertex $ (Vertex3 0 (-1) 0 :: Vertex3 GLfloat)
-    vertex $ (Vertex3 0 1 0    :: Vertex3 GLfloat)
+    vertex (Vertex3 0 (-1) 0 :: Vertex3 GLfloat)
+    vertex (Vertex3 0 1 0    :: Vertex3 GLfloat)
   renderPrimitive Lines $ do
-    vertex $ (Vertex3 0 0 (-1) :: Vertex3 GLfloat)
-    vertex $ (Vertex3 0 0 1    :: Vertex3 GLfloat)
+    vertex (Vertex3 0 0 (-1) :: Vertex3 GLfloat)
+    vertex (Vertex3 0 0 1    :: Vertex3 GLfloat)
