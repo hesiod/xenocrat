@@ -1,8 +1,9 @@
-{-# LANGUAGE ScopedTypeVariables, TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances, ScopedTypeVariables, TypeFamilies, FlexibleContexts #-}
 
 module RenderGL where
 
 import Data.VectorSpace
+import Data.VectorSpace.OpenGL()
 import Data.Basis
 import Graphics.UI.GLUT
 import Control.Arrow
@@ -15,10 +16,24 @@ type Pair s = (s, s)
 type Screen s = Pair s
 type Zoom s = Pair s
 
-scaleCoordinates :: (HasBasis v, AdditiveGroup v, Show s, Fractional s, s ~ Scalar v) => Screen s -> s -> v -> (s, s)
-scaleCoordinates scr zoom v = (a/) *** (b/) $ scr
+class (Real s, Eq s, Show s, Floating s, MatrixComponent s, VertexComponent s) => ConformingScalar s where
+class (Eq v, HasBasis v, InnerSpace v, ConformingScalar (Scalar v)) => ConformingVector v where
+
+instance ConformingScalar GLfloat where
+instance ConformingVector (Pair GLdouble) where
+instance ConformingScalar GLdouble where
+
+convertToDisplay :: (ConformingScalar s, ConformingScalar sn) => (s, s) -> (sn, sn)
+convertToDisplay = realToFrac *** realToFrac
+convertToWorld :: (ConformingScalar s, ConformingScalar sn) => (sn, sn) -> (s, s)
+convertToWorld = realToFrac *** realToFrac
+
+scaleCoordinates :: (ConformingVector v, s ~ Scalar v, ConformingScalar sn) => Screen sn -> s -> v -> (sn, sn)
+scaleCoordinates scr zoom v = (c/x, d/y)
     where
+      (x, y) = convertToWorld scr
       (a:b:_) = map snd . decompose . (^/zoom) $ v
+      (c, d) = convertToDisplay (a, b)
 
 black, white, blue, red, green :: Color4 GLfloat
 black = Color4 0 0 0 1
@@ -27,43 +42,68 @@ blue = Color4 0 0 1 1
 red = Color4 1 0 0 1
 green = Color4 0 1 0 1
 
-picturizeV :: (HasBasis v, AdditiveGroup v, Show s, Fractional s, MatrixComponent s, VertexComponent s, s ~ Scalar v) => Screen s -> Zoom s -> Body v -> IO ()
-picturizeV scr zoom b =
+picturizeV :: forall sn vx vex3. (ConformingScalar sn, vx ~ (sn, sn, sn), vex3 ~ (vx, vx, vx)) => vex3 -> IO ()
+picturizeV (veR, veV, veA) = do
+  lineWidth $= 2
+  preservingMatrix $ do
+    translate $ toVe veR
+    color blue
+    line $ toVx veV
     preservingMatrix $ do
-      lineWidth $= 2
-      translate $ Vector3 xR yR 0
-      currentColor $= black
-      renderObject Solid $ Sphere' 0.01 16 16
-      currentColor $= blue
-      renderPrimitive Lines $ do
-                         vertex nullV
-                         vertex $ Vertex3 xV yV 0
-      translate $ Vector3 xV yV 0
-      rotate deg $ Vector3 0 0 (1::GLfloat)
-      renderPrimitive Lines $ do
-                         vertex nullV
-                         vertex $ Vertex3 xA yA 0
-      rotate deg' $ Vector3 0 0 (1::GLfloat)
-      renderPrimitive Lines $ do
-                         vertex nullV
-                         vertex $ Vertex3 xA yA 0
+                       translate $ toVe veV
+                       rotate deg zAxis
+                       line $ toVx veA
+                       rotate deg' zAxis
+                       line $ toVx veA
+    color black
+    renderObject Solid $ Sphere' 0.01 16 16
   where
-      fac = 1/0.3
-      deg = 135 + 10
-      deg' = 360 - 2*deg
+      toVe (a, b, c) = Vector3 a b c
+      toVx (a, b, c) = Vertex3 a b c
+      deg = 135 + 10 :: sn
+      deg' = 360 - 2*deg :: sn
 --    style = QuadricStyle (Just Smooth) NoTextureCoordinates Outside LineStyle
 --    renderQuadric style $ Sphere 0.1 30 30
-      nullV = Vertex3 0 0 0 :: Vertex3 GLfloat
+      nullV = Vertex3 0 0 0 :: Vertex3 sn
+      zAxis = Vector3 0 0 (1::sn)
+      line :: Vertex3 sn -> IO ()
+      line v = renderPrimitive Lines $ do
+                 vertex nullV
+                 vertex v
+
+scaleState :: forall v s sn vx vex3. (ConformingVector v, s ~ Scalar v, ConformingScalar sn, vx ~ (sn, sn, sn), vex3 ~ (vx, vx, vx)) =>
+              Screen sn -> Zoom s -> State v -> [vex3]
+scaleState scr zoom = map scaleBody
+    where
       (zoomR, zoomV) = zoom
-      (xR, yR) = scaleCoordinates scr zoomR (pos b)
-      (xV, yV) = scaleCoordinates scr zoomV (vel b)
-      (xA, yA) = scaleCoordinates scr (zoomV*fac) (vel b)
+      scaleBody :: Body v -> vex3
+      scaleBody ref = (veR, veV, veA)
+          where
+            fac = 1/0.3 :: s
+            veR = let p = convertToDisplay $ scaleCoordinates scr zoomR (pos ref) :: Pair sn; in (fst p, snd p, 0)
+            veV = let p = convertToDisplay $ scaleCoordinates scr zoomV (vel ref) :: Pair sn; in (fst p, snd p, 0)
+            veA = let p = convertToDisplay $ scaleCoordinates scr (zoomV*fac) (vel ref) :: Pair sn; in (fst p, snd p, 0)
 
-picturizeState :: (HasBasis v, AdditiveGroup v, Show s, Fractional s, MatrixComponent s, VertexComponent s, s ~ Scalar v) => Screen s -> Zoom s -> State v -> IO ()
-picturizeState scr zoom = mapM_ (picturizeV scr zoom)
+picturizeState :: (ConformingVector v, s ~ Scalar v, ConformingScalar sn) => Screen sn -> Zoom s -> State v -> IO ()
+picturizeState scr zoom = mapM_ picturizeV . scaleState scr zoom
 
-updateState :: forall v s. (InnerSpace v, Floating s, Eq s, Eq v, s ~ Scalar v) => s -> State v -> State v
+updateState :: forall v s. (ConformingVector v, s ~ Scalar v) => s -> State v -> State v
 updateState dt st = map updatePoint st
     where
       updatePoint :: Body v -> Body v
       updatePoint body = let st' = filter (/= body) st in dP body st' dt
+
+displayCross :: IO ()
+displayCross =
+  preservingMatrix $ do
+    lineWidth $= 0.8
+    let l = 1000
+    renderPrimitive Lines $ do
+      vertex (Vertex3 (-l) 0 0 :: Vertex3 GLfloat)
+      vertex (Vertex3 l 0 0    :: Vertex3 GLfloat)
+    renderPrimitive Lines $ do
+      vertex (Vertex3 0 (-l) 0 :: Vertex3 GLfloat)
+      vertex (Vertex3 0 l 0    :: Vertex3 GLfloat)
+    renderPrimitive Lines $ do
+      vertex (Vertex3 0 0 (-l) :: Vertex3 GLfloat)
+      vertex (Vertex3 0 0 l    :: Vertex3 GLfloat)
