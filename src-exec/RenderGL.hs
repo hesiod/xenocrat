@@ -51,25 +51,22 @@ picturizeV (veR, veV, veA) = do
     line $ toVx veV
     preservingMatrix $ do
                        translate $ toVe veV
-                       rotate deg zAxis
-                       line $ toVx veA
-                       rotate deg' zAxis
-                       line $ toVx veA
+                       lineA deg
+                       lineA (-deg)
     color black
     renderObject Solid $ Sphere' 0.01 16 16
   where
       toVe (a, b, c) = Vector3 a b c
       toVx (a, b, c) = Vertex3 a b c
       deg = 135 + 10 :: sn
-      deg' = 360 - 2*deg :: sn
---    style = QuadricStyle (Just Smooth) NoTextureCoordinates Outside LineStyle
---    renderQuadric style $ Sphere 0.1 30 30
-      nullV = Vertex3 0 0 0 :: Vertex3 sn
       zAxis = Vector3 0 0 (1::sn)
       line :: Vertex3 sn -> IO ()
       line v = renderPrimitive Lines $ do
-                 vertex nullV
+                 vertex Vertex3 0 0 0
                  vertex v
+      lineA deg = do
+        rotate deg zAxis
+        line $ toVx veA
 
 scaleState :: forall v s sn vx vex3. (ConformingVector v, s ~ Scalar v, ConformingScalar sn, vx ~ (sn, sn, sn), vex3 ~ (vx, vx, vx)) =>
               Screen sn -> Zoom s -> State v -> [vex3]
