@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
-
 module Main where
 
 import GL
