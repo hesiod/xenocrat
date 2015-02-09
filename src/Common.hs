@@ -1,5 +1,9 @@
+{-# LANGUAGE StandaloneDeriving, TypeFamilies, FlexibleContexts, UndecidableInstances #-}
+
 module Common where
 
-import Vector
+import Data.VectorSpace
 
-data Body = Body { mass :: Double, pos :: Vec, vel :: Vec } deriving (Eq, Show)
+data Body v = Body { mass :: Scalar v, pos :: v, vel :: v }
+deriving instance (Eq v, Eq (Scalar v)) => Eq (Body v)
+deriving instance (Show v, Show (Scalar v)) => Show (Body v)
