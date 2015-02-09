@@ -62,9 +62,9 @@ picturizeV (veR, veV, veA) = do
       zAxis = Vector3 0 0 (1::sn)
       line :: Vertex3 sn -> IO ()
       line v = renderPrimitive Lines $ do
-                 vertex Vertex3 0 0 0
+                 vertex $ Vertex3 0 0 (0::GLfloat)
                  vertex v
-      lineA deg = do
+      lineA deg = preservingMatrix $ do
         rotate deg zAxis
         line $ toVx veA
 
@@ -77,9 +77,10 @@ scaleState scr zoom = map scaleBody
       scaleBody ref = (veR, veV, veA)
           where
             fac = 1/0.3 :: s
-            veR = let p = convertToDisplay $ scaleCoordinates scr zoomR (pos ref) :: Pair sn; in (fst p, snd p, 0)
-            veV = let p = convertToDisplay $ scaleCoordinates scr zoomV (vel ref) :: Pair sn; in (fst p, snd p, 0)
-            veA = let p = convertToDisplay $ scaleCoordinates scr (zoomV*fac) (vel ref) :: Pair sn; in (fst p, snd p, 0)
+            vV z v = let p = convertToDisplay $ scaleCoordinates scr z v :: Pair sn; in (fst p, snd p, 0)
+            veR = vV zoomR (pos ref)
+            veV = vV zoomV (vel ref)
+            veA = vV (zoomV*fac) (vel ref)
 
 picturizeState :: (ConformingVector v, s ~ Scalar v, ConformingScalar sn) => Screen sn -> Zoom s -> State v -> IO ()
 picturizeState scr zoom = mapM_ picturizeV . scaleState scr zoom
