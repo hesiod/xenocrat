@@ -2,6 +2,10 @@ module GL where
 
 import Graphics.UI.GLUT
 import Data.IORef
+import Control.Monad
+import Control.Concurrent
+import Control.Concurrent.STM
+import System.Exit
 
 import RenderGL
 import Constants
@@ -17,7 +21,13 @@ glMain = do
   displayCallback $= displayState bds screen
   idleCallback $= Just (idle bds)
   reshapeCallback $= Just (reshape screen)
+  keyboardMouseCallback $= Just keyboard
+
   mainLoop
+
+keyboard :: Key -> KeyState -> a -> b -> IO ()
+keyboard (Char '\27') Down _ _ = exitSuccess
+keyboard _ _ _ _ = return ()
 
 reshape :: IORef (Screen GLfloat) -> Size -> IO ()
 reshape screen s@(Size w h) = do
