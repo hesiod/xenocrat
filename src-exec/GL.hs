@@ -4,7 +4,6 @@ import Graphics.UI.GLUT
 import Data.IORef
 import Control.Monad
 import Control.Concurrent
-import Control.Concurrent.STM
 import System.Exit
 
 import RenderGL
