@@ -15,12 +15,19 @@ glMain = do
   initialDisplayMode $= [DoubleBuffered, RGBMode, WithDepthBuffer, Multisampling, WithSamplesPerPixel 16]
   initialWindowSize $= Size 500 500
   _ <- createWindow progName
+
   bds <- newIORef [earth,moon,sun]
   screen <- newIORef (500,500)
   displayCallback $= displayState bds screen
-  idleCallback $= Just (idle bds)
+  idleCallback $= Just idle
   reshapeCallback $= Just (reshape screen)
   keyboardMouseCallback $= Just keyboard
+
+  _ <- forkIO $ forever $ do
+           s <- get bds
+           writeIORef bds $ updateState 1000 s
+--           threadDelay 5
+           yield
 
   mainLoop
 
@@ -44,10 +51,8 @@ reshape screen s@(Size w h) = do
 
   print (w, h)
 
-idle :: IORef (State (Pair FT)) -> IO ()
-idle state = do
-  s <- get state
-  state $= updateState 10 s
+idle :: IO ()
+idle = do
   postRedisplay Nothing
 
 setup :: IO ()
