@@ -50,10 +50,8 @@ idle state = do
   state $= updateState 10 s
   postRedisplay Nothing
 
-displayState :: IORef (State (Pair FT)) -> IORef (Screen GLfloat) -> IO ()
-displayState state screen = do
-  s <- get state
-  scr <- get screen
+setup :: IO ()
+setup = do
   blend $= Enabled
   blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
   hint LineSmooth $= Nicest
@@ -61,11 +59,17 @@ displayState state screen = do
   clearColor $= white
   clear [ColorBuffer]
 
+displayState :: IORef (State (Pair FT)) -> IORef (Screen GLfloat) -> IO ()
+displayState bds screen = do
+  scr <- get screen
+  s <- get bds
+  setup
+
   loadIdentity
   lookAt (Vertex3 1 1 1) (Vertex3 0 0 0) (Vector3 0 1 0)
   rotate (90 :: GLfloat) $ Vector3 1 0 0
 
   color red
   displayCross
-  picturizeState scr (0.3*3e6,1e2) s
+  picturizeState scr (100*3e6,1e2) s
   swapBuffers
