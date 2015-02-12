@@ -1,13 +1,18 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+
 module GL where
 
 import Graphics.UI.GLUT
 import Data.IORef
+import Control.DeepSeq
 import Control.Monad
 import Control.Concurrent
 import System.Exit
 
 import RenderGL
 import Constants
+
+instance NFData GLdouble where
 
 glMain :: IO ()
 glMain = do
@@ -25,7 +30,7 @@ glMain = do
 
   _ <- forkIO $ forever $ do
            s <- get bds
-           writeIORef bds $ updateState 1000 s
+           writeIORef bds $!! updateState 1000 s
 --           threadDelay 5
            yield
 
