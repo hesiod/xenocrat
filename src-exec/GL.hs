@@ -12,7 +12,7 @@ import System.Exit
 import RenderGL
 import Constants
 
-instance NFData GLdouble where
+instance NFData GLdouble
 
 glMain :: IO ()
 glMain = do
@@ -24,15 +24,14 @@ glMain = do
   bds <- newIORef [earth,moon,sun]
   screen <- newIORef (500,500)
   displayCallback $= displayState bds screen
-  idleCallback $= Just idle
+  idleCallback $= Just (postRedisplay Nothing)
   reshapeCallback $= Just (reshape screen)
   keyboardMouseCallback $= Just keyboard
 
   _ <- forkIO $ forever $ do
-           s <- get bds
-           writeIORef bds $!! updateState 1000 s
---           threadDelay 5
-           yield
+           s <- readIORef bds
+           let s' = updateState 100 s
+           s' `deepseq` writeIORef bds s'
 
   mainLoop
 
@@ -56,10 +55,6 @@ reshape screen s@(Size w h) = do
 
   print (w, h)
 
-idle :: IO ()
-idle = do
-  postRedisplay Nothing
-
 setup :: IO ()
 setup = do
   blend $= Enabled
@@ -82,4 +77,4 @@ displayState bds screen = do
   color red
   displayCross
   picturizeState scr (100*3e6,1e2) s
-  swapBuffers
+  flush >> swapBuffers
