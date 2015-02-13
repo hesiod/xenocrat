@@ -14,3 +14,6 @@ cabal.config
 # Other
 *~
 .*.swp
+*.hp
+*.aux
+*.prof
