@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, ConstraintKinds, TemplateHaskell, TypeOperators, TypeFamilies, QuasiQuotes #-}
+{-# LANGUAGE FlexibleInstances, ConstraintKinds, TypeOperators, TypeFamilies #-}
 
 module Constants where
 

@@ -91,7 +91,7 @@ picturizeState :: (ConformingVector v, s ~ Scalar v, s ~ FT, ConformingScalar sn
 picturizeState scr zoom = mapM_ picturizeV . scaleState scr zoom
 
 updateState :: forall v s. (NFData v, ConformingVector v, s ~ Scalar v, s ~ FT) => Time SI s -> State SI v -> State SI v
-updateState dt st = parMap (rdeepseq) (\b -> let st' = filter (/= b) st in dP b st' dt) st
+updateState dt st = parMap rdeepseq (\b -> let st' = filter (/= b) st in dP b st' dt) st
 
 displayCross :: IO ()
 displayCross =
