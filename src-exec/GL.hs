@@ -1,20 +1,23 @@
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TypeOperators, ConstraintKinds #-}
 
 module GL where
 
-import Graphics.UI.GLUT
-import Data.IORef
 import Control.DeepSeq
 import Control.Monad
 import Control.Concurrent
+import Data.IORef
 import System.Exit
+
+import Graphics.UI.GLUT
+import Data.VectorSpace
+import Data.Metrology.Vector
+import Data.Metrology.SI.Poly
 
 import RenderGL
 import Constants
+import Common
 
-instance NFData GLdouble
-
-glMain :: IO ()
+glMain :: forall v s. (ConformingVector v, s ~ Scalar v, s ~ FT, v ~ (FT, FT)) => IO ()
 glMain = do
   (progName, _) <- getArgsAndInitialize
   initialDisplayMode $= [DoubleBuffered, RGBMode, WithDepthBuffer, Multisampling, WithSamplesPerPixel 16]
@@ -32,7 +35,7 @@ glMain = do
 
   _ <- forkIO $ forever $ do
            s <- readIORef bds
-           let s' = updateState 100 s
+           let s' = updateState (100% Second :: Time SI s) s
            s' `deepseq` writeIORef bds s'
 
   mainLoop
@@ -72,7 +75,7 @@ setup = do
   clearColor $= white
   clear [ColorBuffer]
 
-displayState :: IORef (State (Pair FT)) -> IORef (Screen GLfloat) -> IO ()
+displayState :: IORef (State SI (Pair FT)) -> IORef (Screen GLfloat) -> IO ()
 displayState bds screen = do
   scr <- get screen
   s <- get bds
@@ -82,7 +85,14 @@ displayState bds screen = do
   lookAt (Vertex3 1 1 1) (Vertex3 0 0 0) (Vector3 0 1 0)
   rotate (90 :: GLfloat) $ Vector3 1 0 0
 
+  color green
+  displayCross
+
+  let z = (100*3e6,1e2)
+  --let p = scaleCoordinates scr (fst z) . (negate *** negate) . (# Meter) . pos . head $ s
+  --translate $ Vector3 (fst p) (snd p) 0
+
   color red
   displayCross
-  picturizeState scr (100*3e6,1e2) s
+  picturizeState scr z s
   flush >> swapBuffers
