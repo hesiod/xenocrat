@@ -23,10 +23,12 @@ glMain = do
 
   bds <- newIORef [earth,moon,sun]
   screen <- newIORef (500,500)
+
   displayCallback $= displayState bds screen
-  idleCallback $= Just (postRedisplay Nothing)
+  idleCallback $= Nothing
   reshapeCallback $= Just (reshape screen)
   keyboardMouseCallback $= Just keyboard
+  addTimerCallback 1 timer
 
   _ <- forkIO $ forever $ do
            s <- readIORef bds
@@ -34,6 +36,12 @@ glMain = do
            s' `deepseq` writeIORef bds s'
 
   mainLoop
+
+timer :: IO ()
+timer = do
+  let fps = 30 :: Double
+  addTimerCallback (floor $ 1000 / fps) timer
+  postRedisplay Nothing
 
 keyboard :: Key -> KeyState -> a -> b -> IO ()
 keyboard (Char '\27') Down _ _ = exitSuccess
