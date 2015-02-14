@@ -7,6 +7,8 @@ import Data.VectorSpace.OpenGL()
 import Data.Basis
 import Graphics.UI.GLUT
 import Control.Arrow
+import Control.Parallel
+import Control.Parallel.Strategies
 
 import Physics
 import Common
@@ -85,8 +87,8 @@ scaleState scr zoom = map scaleBody
 picturizeState :: (ConformingVector v, s ~ Scalar v, ConformingScalar sn) => Screen sn -> Zoom s -> State v -> IO ()
 picturizeState scr zoom = mapM_ picturizeV . scaleState scr zoom
 
-updateState :: forall v s. (ConformingVector v, s ~ Scalar v) => s -> State v -> State v
-updateState dt st = map updatePoint st
+updateState :: forall v s. (NFData v, ConformingVector v, s ~ Scalar v) => s -> State v -> State v
+updateState dt st = parMap (rdeepseq) updatePoint st
     where
       updatePoint :: Body v -> Body v
       updatePoint body = let st' = filter (/= body) st in dP body st' dt
