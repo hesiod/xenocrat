@@ -12,7 +12,7 @@ import Constants
 fG :: forall v s. (InnerSpace v, Floating s, s ~ Scalar v, s ~ FT) => Body SI v -> Body SI v -> Force SI v
 fG a b = dir |^*| f
     where
-      dp = pos a |-| pos b
+      dp = pos b |-| pos a
       m = mass a |*| mass b
       mg = gamma |*| m
       r = qMagnitudeSq dp
@@ -30,7 +30,7 @@ vA ref bodies dt = vel ref |+| v
       v = (ffA |^*| dt) |^/| mass ref
 
 dP :: (InnerSpace v, Floating s, s ~ Scalar v, s ~ FT) => Body SI v -> [Body SI v] -> Time SI s -> Body SI v
-dP ref bodies dt = ref { vel = vAvg, pos = (vAvg |^*| dt) |+| pos ref }
+dP ref bodies dt = ref { vel = v1, pos = (vAvg |^*| dt) |+| pos ref }
     where
       v0 = vel ref
       v1 = vA ref bodies dt
