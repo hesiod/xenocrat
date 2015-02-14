@@ -1,7 +1,10 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+
 module GL where
 
 import Graphics.UI.GLUT
 import Data.IORef
+import Control.DeepSeq
 import Control.Monad
 import Control.Concurrent
 import System.Exit
@@ -9,20 +12,36 @@ import System.Exit
 import RenderGL
 import Constants
 
+instance NFData GLdouble
+
 glMain :: IO ()
 glMain = do
   (progName, _) <- getArgsAndInitialize
   initialDisplayMode $= [DoubleBuffered, RGBMode, WithDepthBuffer, Multisampling, WithSamplesPerPixel 16]
   initialWindowSize $= Size 500 500
   _ <- createWindow progName
+
   bds <- newIORef [earth,moon,sun]
   screen <- newIORef (500,500)
+
   displayCallback $= displayState bds screen
-  idleCallback $= Just (idle bds)
+  idleCallback $= Nothing
   reshapeCallback $= Just (reshape screen)
   keyboardMouseCallback $= Just keyboard
+  addTimerCallback 1 timer
+
+  _ <- forkIO $ forever $ do
+           s <- readIORef bds
+           let s' = updateState 100 s
+           s' `deepseq` writeIORef bds s'
 
   mainLoop
+
+timer :: IO ()
+timer = do
+  let fps = 30 :: Double
+  addTimerCallback (floor $ 1000 / fps) timer
+  postRedisplay Nothing
 
 keyboard :: Key -> KeyState -> a -> b -> IO ()
 keyboard (Char '\27') Down _ _ = exitSuccess
@@ -43,12 +62,6 @@ reshape screen s@(Size w h) = do
   matrixMode $= Modelview 0
 
   print (w, h)
-
-idle :: IORef (State (Pair FT)) -> IO ()
-idle state = do
-  s <- get state
-  state $= updateState 10 s
-  postRedisplay Nothing
 
 setup :: IO ()
 setup = do
@@ -72,4 +85,4 @@ displayState bds screen = do
   color red
   displayCross
   picturizeState scr (100*3e6,1e2) s
-  swapBuffers
+  flush >> swapBuffers
