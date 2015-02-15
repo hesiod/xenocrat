@@ -6,7 +6,7 @@ import Data.VectorSpace
 import GHC.Generics (Generic)
 import Control.DeepSeq
 import Data.Metrology.SI.Poly
-import Graphics.UI.GLUT hiding (Length, Point)
+import Graphics.Rendering.OpenGL hiding (Length, Point)
 
 type FT = GLdouble
 

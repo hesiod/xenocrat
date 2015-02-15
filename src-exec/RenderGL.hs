@@ -7,7 +7,7 @@ import Data.VectorSpace.OpenGL()
 import Data.Metrology.Vector
 import Data.Metrology.SI.Poly
 import Data.Basis
-import Graphics.UI.GLUT
+import Graphics.Rendering.OpenGL
 import Control.Arrow
 import Control.Parallel.Strategies
 
@@ -57,7 +57,7 @@ picturizeV (veR, veV, veA) = do
                        lineA deg
                        lineA (-deg)
     color black
-    renderObject Solid $ Sphere' 0.01 16 16
+    -- render sphere here
   where
       toVe (a, b, c) = Vector3 a b c
       toVx (a, b, c) = Vertex3 a b c

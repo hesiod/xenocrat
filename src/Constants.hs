@@ -5,7 +5,7 @@ module Constants where
 import Data.Metrology.Vector
 import qualified Data.Dimensions.SI as D
 import Data.Metrology.SI.Poly
-import Graphics.UI.GLUT hiding (Length, Point)
+import Graphics.Rendering.OpenGL hiding (Length, Point)
 import Data.VectorSpace.OpenGL()
 
 import Common

@@ -24,7 +24,7 @@ library
   exposed-modules:     Common, Constants, Physics
   -- other-modules:
   other-extensions:    TypeFamilies
-  build-depends:       base >=4.7 && <4.8, units, units-defs, vector-space, vector-space-opengl, OpenGL, GLUT, deepseq
+  build-depends:       base >=4.7 && <4.8, units, units-defs, vector-space, vector-space-opengl, OpenGL, deepseq
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -33,7 +33,7 @@ executable xenocrat
   main-is:             Main.hs
   other-modules:       RenderGL, GL
   -- other-extensions:
-  build-depends:       base >=4.7 && <4.8, xenocrat, vector-space, vector-space-opengl, OpenGL, GLUT, deepseq, parallel, units, units-defs
+  build-depends:       base >=4.7 && <4.8, xenocrat, vector-space, vector-space-opengl, OpenGL, GLFW-b, deepseq, suspend, timers, parallel, units, units-defs
   hs-source-dirs:      src-exec
   default-language:    Haskell2010
 
