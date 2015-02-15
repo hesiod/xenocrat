@@ -13,10 +13,9 @@ fG :: forall v s. (InnerSpace v, Floating s, s ~ Scalar v, s ~ FT) => Body SI v 
 fG a b = dir |^*| f
     where
       dp = pos b |-| pos a
-      m = mass a |*| mass b
-      mg = gamma |*| m
+      m = gamma |*| mass a |*| mass b
       r = qMagnitudeSq dp
-      f = redim $ mg |/| r :: Force SI s
+      f = redim $ m |/| r :: Force SI s
       dir = qNormalized dp
 --      dir = qNormalized $ pos a |.-.| pos b :: Qu '[] SI v
 

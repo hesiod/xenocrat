@@ -5,7 +5,7 @@ name:                xenocrat
 --                   | | | +--- code changes with no API change
 version:             0.1.0.0
 synopsis:            Orbital Mechanics Simulator
--- description:
+description:         Orbital Mechanics Simulator
 license:             GPL-3
 license-file:        LICENSE
 author:              Tobias Markus
