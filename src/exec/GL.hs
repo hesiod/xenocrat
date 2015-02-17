@@ -15,6 +15,8 @@ import Data.Metrology.Vector
 import Data.Metrology.SI.Poly
 
 import RenderGL
+import Simulation
+import GLHelper
 import Constants
 import Common
 
@@ -91,9 +93,10 @@ displayState bds screen w = forever $ do
 
   color green
   displayCross
+
   let z = (100*3e6, 1e2)
-  --let p = scaleCoordinates scr (fst z) . (negate *** negate) . (# Meter) . pos . head $ s
-  --translate $ Vector3 (fst p) (snd p) 0
+--let p = scaleCoordinates scr (fst z) . (negate *** negate) . (# Meter) . pos . head $ s
+--translate $ Vector3 (fst p) (snd p) 0
 
   color red
   displayCross

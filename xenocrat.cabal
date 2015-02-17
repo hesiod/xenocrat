@@ -31,7 +31,7 @@ library
 executable xenocrat
   ghc-options:         -threaded -Wall -O2
   main-is:             Main.hs
-  other-modules:       RenderGL, GL
+  other-modules:       RenderGL, GL, GLHelper, Simulation
   -- other-extensions:
   build-depends:       base >=4.7 && <4.8, xenocrat, vector-space, vector-space-opengl, OpenGL, GLFW-b, deepseq, suspend, timers, parallel, units, units-defs
   hs-source-dirs:      src/exec
