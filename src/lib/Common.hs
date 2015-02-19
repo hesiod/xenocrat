@@ -9,6 +9,7 @@ import Data.Metrology.SI.Poly
 import Graphics.Rendering.OpenGL hiding (Length, Point)
 
 type FT = GLdouble
+type DT = GLfloat
 
 -- pos should be a QPoint
 data Body l v = Body { mass :: !(Mass l (Scalar v)), pos :: !(Length l v), vel :: !(Velocity l v) } deriving Generic

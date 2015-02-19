@@ -5,7 +5,6 @@ module Constants where
 import Data.Metrology.Vector
 import qualified Data.Dimensions.SI as D
 import Data.Metrology.SI.Poly
-import Graphics.Rendering.OpenGL hiding (Length, Point)
 import Data.VectorSpace.OpenGL()
 
 import Common
@@ -22,7 +21,7 @@ type instance DefaultUnitOfDim D.Current = Ampere
 type instance DefaultUnitOfDim D.Temperature = Kelvin
 
 type GammaU = (Meter :^ Three) :* ((Kilo :@ Gram) :^ MOne) :* (Second :^ MTwo)
-gamma :: DefaultConvertibleLCSU_U GammaU l => MkQu_ULN GammaU l GLdouble
+gamma :: DefaultConvertibleLCSU_U GammaU l => MkQu_ULN GammaU l FT
 gamma = constant $ 6.67384e-11 % (undefined :: GammaU)
 
 earth, moon, sun :: Body SI (FT, FT)

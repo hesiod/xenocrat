@@ -22,9 +22,8 @@ type Zoom s = Pair s
 class (Real s, Eq s, Show s, Floating s, MatrixComponent s, VertexComponent s) => ConformingScalar s where
 class (Eq v, HasBasis v, InnerSpace v, ConformingScalar (Scalar v)) => ConformingVector v where
 
-instance ConformingScalar GLfloat
-instance ConformingVector (Pair GLdouble)
-instance ConformingScalar GLdouble
+instance ConformingScalar FT
+instance ConformingVector (Pair FT)
 
 scaleCoordinates :: (ConformingVector v, s ~ Scalar v, ConformingScalar sn) => Screen sn -> s -> v -> (sn, sn)
 scaleCoordinates scr zoom v = (c/x, d/y)
