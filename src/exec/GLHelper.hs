@@ -20,3 +20,13 @@ buildShader shaders prepare = do
     get (validateStatus p) >>= print
     get (programInfoLog p) >>= print
     return sp
+
+{-
+Needs ExistentialQuantification
+data Uniformlike = forall a. AsUniform a => U a
+instance AsUniform Uniformlike where
+    asUniform = asUniform
+type Uniforms = [(String, Uniformlike)]
+setUniforms :: ShaderProgram -> Uniforms -> IO ()
+setUniforms sp us = mapM_ (uncurry (setUniform sp)) us
+-}

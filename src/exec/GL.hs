@@ -28,9 +28,8 @@ import Simulation
 import GLHelper
 import Shaders
 
-type MVAO = Map String VAO
-type MSP = Map String ShaderProgram
-type MB = Map String BufferObject
+type SBV = (ShaderProgram, BufferObject, VAO)
+type MSBV = Map String SBV
 
 errorC :: G.ErrorCallback
 errorC _ = putStrLn
@@ -95,18 +94,19 @@ glMain = GL.init (\window -> do
                setAttrib sp "position" ToFloat $ VertexArrayDescriptor 3 Float 0 offset0
     crossSP <- buildShader [passthroughVS, crossGS, defaultFS] prepare
     vectorSP <- buildShader [defaultVS, vectorGS, defaultFS] prepare
+    planetSP <- buildShader [defaultVS, defaultFS] prepare
     crossB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 DT]
     crossV <- setup crossSP
+    planetB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 DT]
+    planetV <- setup planetSP
     vectorB <- makeBuffer ArrayBuffer (replicate 6 $ V3 0 0 0 :: [V3 DT])
     vectorV <- setup vectorSP
-    let bufs = Map.fromList [("cross", crossB), ("vector", vectorB)] :: MB
-        sps = Map.fromList [("cross", crossSP), ("vector", vectorSP)] :: MSP
-        vaos = Map.fromList [("cross", crossV), ("vector", vectorV)] :: MVAO
+    let sbv = Map.fromList [("cross", (crossSP, crossB, crossV)), ("vector", (vectorSP, vectorB, vectorV)), ("planet", (planetSP, planetB, planetV))] :: MSBV
 
     bds <- newIORef [earth, moon, sun]
     screen <- newIORef (1024, 768)
     cam <- newIORef (fpsCamera :: Camera DT)
-    let display = displayState bufs sps vaos cam bds screen
+    let display = displayState sbv cam bds screen
         reshape = reshapeC screen
     G.swapInterval 1
     G.setKeyCallback window $ Just $ keyboardC cam
@@ -120,8 +120,9 @@ glMain = GL.init (\window -> do
     display window
     )
 
-displayState :: MB -> MSP -> MVAO -> IORef (Camera DT) -> IORef (State SI (Pair FT)) -> IORef (Screen GLfloat) -> G.WindowRefreshCallback
-displayState bufs sps vaos cam bds screen w = forever $ do
+
+displayState :: MSBV -> IORef (Camera DT) -> IORef (State SI (Pair FT)) -> IORef (Screen GLfloat) -> G.WindowRefreshCallback
+displayState sbv cam bds screen w = forever $ do
   blend $= Enabled
   blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
   clearColor $= blue
@@ -130,17 +131,14 @@ displayState bufs sps vaos cam bds screen w = forever $ do
   camera <- get cam
   scr <- get screen
 
-  let cS = sps ! "cross"
-  let cV = vaos ! "cross"
-  let cB = bufs ! "cross"
-  let vS = sps ! "vector"
-  let vV = vaos ! "vector"
-  let vB = bufs ! "vector"
+  let (cS, cB, cV) = sbv ! "cross"
+  let (pS, pB, pV) = sbv ! "planet"
+  let (vS, vB, vV) = sbv ! "vector"
 
-  let rot = m33_to_m44 $ fromQuaternion $ axisAngle (V3 1 0 0) (0 * pi / 180) :: M44 DT
-      arrowrot = m33_to_m44 $ fromQuaternion $ axisAngle (V3 0 0 1) (60 * pi / 180) :: M44 DT -- (V3 0 1 0)
+  let mkRot axis rad = m33_to_m44 . fromQuaternion $ axisAngle axis rad
+      arrowrot = mkRot (V3 0 0 1) (deg2rad 60) :: M44 DT
       look = Linear.lookAt (V3 0 0 1) (V3 0 0 0) (V3 0 1 0)
-      view = look !*! camMatrix camera -- rot
+      view = look !*! camMatrix camera
       near = 0.01
       far = 10
       fov = 0.8
@@ -148,8 +146,6 @@ displayState bufs sps vaos cam bds screen w = forever $ do
       proj = Linear.perspective fov ar near far
       arrowscale = 0.6 :: DT
       zoom = 3e11 :: DT
-
-  lineWidth $= 0.1
 
   currentProgram $= Just (program cS)
   setUniform cS "view" view
@@ -159,18 +155,30 @@ displayState bufs sps vaos cam bds screen w = forever $ do
     bindBuffer ArrayBuffer $= Just cB
     drawArrays Points 0 1
 
-  s <- get bds
+  currentProgram $= Just (program pS)
+  setUniform pS "view" view
+  setUniform pS "proj" proj
+  setUniform pS "model" (eye4 :: M44 DT)
+  setUniform pS "zoom" zoom
+  let vertsI = fmap (*1e10) <$> fmap realToFrac <$> icosahedronTriangles :: [V3 DT]
+  withVAO pV $ do
+    bindBuffer ArrayBuffer $= Just pB
+    replaceBuffer ArrayBuffer vertsI
+    drawArrays Triangles 0 (fromIntegral $ length vertsI)
+
   currentProgram $= Just (program vS)
   setUniform vS "view" view
   setUniform vS "proj" proj
   setUniform vS "model" (eye4 :: M44 DT)
+  setUniform vS "zoom" zoom
   setUniform vS "arrowrot" arrowrot
   setUniform vS "arrowscale" arrowscale
-  setUniform vS "zoom" zoom
+  s <- get bds
   let verts = fmap realToFrac <$> concatMap bodyVertices s :: [V3 DT]
   withVAO vV $ do
     bindBuffer ArrayBuffer $= Just vB
     replaceBuffer ArrayBuffer verts
+    lineWidth $= 0.1
     drawArrays Lines 0 (fromIntegral $ length verts)
 
   throwError -- get errors >>= (\e -> unless (null e) $ print e)

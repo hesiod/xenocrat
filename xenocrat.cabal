@@ -33,7 +33,7 @@ executable xenocrat
   main-is:             Main.hs
   other-modules:       RenderGL, GL, GLHelper, Simulation
   -- other-extensions:
-  build-depends:       base >=4.7 && <4.8, xenocrat, vector-space, vector-space-opengl, OpenGL, GLFW-b, GLUtil, linear, deepseq, suspend, timers, parallel, units, units-defs, split, file-embed, bytestring, containers
+  build-depends:       base >=4.7 && <4.8, xenocrat, vector-space, vector-space-opengl, OpenGL, GLFW-b, GLUtil, linear, deepseq, suspend, timers, parallel, units, units-defs, split, file-embed, bytestring, containers, lens
   hs-source-dirs:      src/exec
   default-language:    Haskell2010
 
