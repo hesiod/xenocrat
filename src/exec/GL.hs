@@ -94,7 +94,7 @@ glMain = GL.init (\window -> do
                setAttrib sp "position" ToFloat $ VertexArrayDescriptor 3 Float 0 offset0
     crossSP <- buildShader [passthroughVS, crossGS, defaultFS] prepare
     vectorSP <- buildShader [defaultVS, vectorGS, defaultFS] prepare
-    planetSP <- buildShader [defaultVS, defaultFS] prepare
+    planetSP <- buildShader [planetVS, planetTCS, planetTES, defaultFS] prepare
     crossB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 DT]
     crossV <- setup crossSP
     planetB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 DT]
@@ -117,6 +117,8 @@ glMain = GL.init (\window -> do
            s <- readIORef bds
            let s' = updateState (10 % Second :: Time SI s) s
            s' `deepseq` writeIORef bds s'
+    patchVertices $= 3
+    lineWidth $= 0.1
     display window
     )
 
@@ -146,40 +148,42 @@ displayState sbv cam bds screen w = forever $ do
       proj = Linear.perspective fov ar near far
       arrowscale = 0.6 :: DT
       zoom = 3e11 :: DT
+      zoomP = 10 :: DT
+      eye = eye4 :: M44 DT
+      tessI = 10 :: DT
+      tessO = 10 :: DT
 
   currentProgram $= Just (program cS)
   setUniform cS "view" view
   setUniform cS "proj" proj
-  setUniform cS "model" (eye4 :: M44 DT)
-  withVAO cV $ do
-    bindBuffer ArrayBuffer $= Just cB
-    drawArrays Points 0 1
+  setUniform cS "model" eye
+  bindBuffer ArrayBuffer $= Just cB
+  withVAO cV $ drawArrays Points 0 1
 
   currentProgram $= Just (program pS)
   setUniform pS "view" view
   setUniform pS "proj" proj
-  setUniform pS "model" (eye4 :: M44 DT)
-  setUniform pS "zoom" zoom
-  let vertsI = fmap (*1e10) <$> fmap realToFrac <$> icosahedronTriangles :: [V3 DT]
-  withVAO pV $ do
-    bindBuffer ArrayBuffer $= Just pB
-    replaceBuffer ArrayBuffer vertsI
-    drawArrays Triangles 0 (fromIntegral $ length vertsI)
+  setUniform pS "model" eye
+  setUniform pS "zoom" zoomP
+  setUniform pS "tessInner" tessI
+  setUniform pS "tessOuter" tessO
+  let vertsI = fmap realToFrac <$> icosahedronTriangles :: [V3 DT]
+  bindBuffer ArrayBuffer $= Just pB
+  replaceBuffer ArrayBuffer vertsI
+  withVAO pV $ drawArrays Patches 0 (fromIntegral $ length vertsI)
 
   currentProgram $= Just (program vS)
   setUniform vS "view" view
   setUniform vS "proj" proj
-  setUniform vS "model" (eye4 :: M44 DT)
+  setUniform vS "model" eye
   setUniform vS "zoom" zoom
   setUniform vS "arrowrot" arrowrot
   setUniform vS "arrowscale" arrowscale
   s <- get bds
   let verts = fmap realToFrac <$> concatMap bodyVertices s :: [V3 DT]
-  withVAO vV $ do
-    bindBuffer ArrayBuffer $= Just vB
-    replaceBuffer ArrayBuffer verts
-    lineWidth $= 0.1
-    drawArrays Lines 0 (fromIntegral $ length verts)
+  bindBuffer ArrayBuffer $= Just vB
+  replaceBuffer ArrayBuffer verts
+  withVAO vV $ drawArrays Lines 0 (fromIntegral $ length verts)
 
   throwError -- get errors >>= (\e -> unless (null e) $ print e)
 
