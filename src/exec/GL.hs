@@ -165,8 +165,8 @@ displayState sbv cam bds screen w = forever $ do
   setUniform pS "proj" proj
   setUniform pS "model" eye
   setUniform pS "zoom" zoomP
-  setUniform pS "tessInner" tessI
-  setUniform pS "tessOuter" tessO
+  setUniform pS "tess_inner" tessI
+  setUniform pS "tess_outer" tessO
   let vertsI = fmap realToFrac <$> icosahedronTriangles :: [V3 DT]
   bindBuffer ArrayBuffer $= Just pB
   replaceBuffer ArrayBuffer vertsI

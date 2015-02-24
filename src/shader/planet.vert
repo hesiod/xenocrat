@@ -1,9 +1,9 @@
 #version 440 core
 
 in vec3 position;
-out vec3 vPosition;
+out vec3 v_position;
 
 void main()
 {
-  vPosition = position;
+  v_position = position;
 }
