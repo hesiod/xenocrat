@@ -19,6 +19,8 @@ import Graphics.GLUtil.Camera3D
 import Graphics.Rendering.OpenGL
 import qualified Graphics.UI.GLFW as G
 import System.Exit
+import Foreign.Storable
+import Data.Array.Storable
 
 import Constants
 import Common
@@ -27,9 +29,6 @@ import RenderGL
 import Simulation
 import GLHelper
 import Shaders
-
-type SBV = (ShaderProgram, BufferObject, VAO)
-type MSBV = Map String SBV
 
 errorC :: G.ErrorCallback
 errorC _ = putStrLn
@@ -86,6 +85,10 @@ init main = do
                 exitSuccess
   else exitFailure
 
+data ProgramIdentifier = Cross | Planet | Vector deriving (Ord, Eq)
+type SBV = (ShaderProgram, Map BufferTarget BufferObject , VAO)
+type MSBV = Map ProgramIdentifier SBV
+
 glMain :: forall v s. (ConformingVector v, s ~ Scalar v, s ~ FT, v ~ (FT, FT)) => IO ()
 glMain = GL.init (\window -> do
     let prepare p = bindFragDataLocation p "outColor" $= 0
@@ -101,11 +104,15 @@ glMain = GL.init (\window -> do
     planetV <- setup planetSP
     vectorB <- makeBuffer ArrayBuffer (replicate 6 $ V3 0 0 0 :: [V3 DT])
     vectorV <- setup vectorSP
-    let sbv = Map.fromList [("cross", (crossSP, crossB, crossV)), ("vector", (vectorSP, vectorB, vectorV)), ("planet", (planetSP, planetB, planetV))] :: MSBV
+    let sbv = Map.fromList [(Cross, (crossSP, Map.fromList [(ArrayBuffer, crossB)], crossV)),
+                            (Vector, (vectorSP, Map.fromList [(ArrayBuffer, vectorB)], vectorV)),
+                            (Planet, (planetSP, Map.fromList [(ArrayBuffer, planetB)], planetV))] :: MSBV
 
     bds <- newIORef [earth, moon, sun]
     screen <- newIORef (1024, 768)
     cam <- newIORef (fpsCamera :: Camera DT)
+    patchVertices $= 3
+    lineWidth $= 0.1
     let display = displayState sbv cam bds screen
         reshape = reshapeC screen
     G.swapInterval 1
@@ -117,11 +124,8 @@ glMain = GL.init (\window -> do
            s <- readIORef bds
            let s' = updateState (10 % Second :: Time SI s) s
            s' `deepseq` writeIORef bds s'
-    patchVertices $= 3
-    lineWidth $= 0.1
     display window
     )
-
 
 displayState :: MSBV -> IORef (Camera DT) -> IORef (State SI (Pair FT)) -> IORef (Screen GLfloat) -> G.WindowRefreshCallback
 displayState sbv cam bds screen w = forever $ do
@@ -133,12 +137,14 @@ displayState sbv cam bds screen w = forever $ do
   camera <- get cam
   scr <- get screen
 
-  let (cS, cB, cV) = sbv ! "cross"
-  let (pS, pB, pV) = sbv ! "planet"
-  let (vS, vB, vV) = sbv ! "vector"
-
-  let mkRot axis rad = m33_to_m44 . fromQuaternion $ axisAngle axis rad
-      arrowrot = mkRot (V3 0 0 1) (deg2rad 60) :: M44 DT
+  let (cS, cBs, cV) = sbv ! Cross
+      (pS, pBs, pV) = sbv ! Planet
+      (vS, vBs, vV) = sbv ! Vector
+      cB = cBs ! ArrayBuffer
+      pB = pBs ! ArrayBuffer
+      vB = vBs ! ArrayBuffer
+      mkRot axis rad = m33_to_m44 . fromQuaternion $ axisAngle axis rad
+      arrowrot = mkRot (V3 0 0 1) (deg2rad 50) :: M44 DT
       look = Linear.lookAt (V3 0 0 1) (V3 0 0 0) (V3 0 1 0)
       view = look !*! camMatrix camera
       near = 0.01
@@ -150,8 +156,9 @@ displayState sbv cam bds screen w = forever $ do
       zoom = 3e11 :: DT
       zoomP = 10 :: DT
       eye = eye4 :: M44 DT
-      tessI = 10 :: DT
-      tessO = 10 :: DT
+      tessI = 8*8 :: DT
+      tessO = 8*8 :: DT
+      noisiness = 0.3 :: DT
 
   currentProgram $= Just (program cS)
   setUniform cS "view" view
@@ -165,8 +172,10 @@ displayState sbv cam bds screen w = forever $ do
   setUniform pS "proj" proj
   setUniform pS "model" eye
   setUniform pS "zoom" zoomP
+  setUniform pS "noisiness" noisiness
   setUniform pS "tess_inner" tessI
   setUniform pS "tess_outer" tessO
+  setUniform pS "origin" (V3 0 0 (0::DT))
   let vertsI = fmap realToFrac <$> icosahedronTriangles :: [V3 DT]
   bindBuffer ArrayBuffer $= Just pB
   replaceBuffer ArrayBuffer vertsI
@@ -185,7 +194,7 @@ displayState sbv cam bds screen w = forever $ do
   replaceBuffer ArrayBuffer verts
   withVAO vV $ drawArrays Lines 0 (fromIntegral $ length verts)
 
-  throwError -- get errors >>= (\e -> unless (null e) $ print e)
+  throwError
 
   G.swapBuffers w
   G.pollEvents

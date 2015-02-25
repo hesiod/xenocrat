@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE FlexibleInstances, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TypeOperators, ConstraintKinds, TemplateHaskell #-}
 
 module RenderGL where
@@ -44,7 +45,7 @@ triangleArea (a:b:c:_) = 0.5 * norm $ (b - a) `cross` (c - a)
 triangleArea _ = undefined
 
 primitiveEquals :: Eq a => [a] -> [a] -> Bool
-a `primitiveEquals` b = a `elem` permutations b;
+a `primitiveEquals` b = a `elem` permutations b
 
 -- 'Golden Values': 1.902113032590307 1.7320508075688772 4.534567884457024
 icosahedronTriangles :: [V3 FT]
