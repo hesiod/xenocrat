@@ -1,4 +1,4 @@
-# xenocrat
+# xenocrat [![Build Status](https://travis-ci.org/hesiod/xenocrat.png)](https://travis-ci.org/hesiod/xenocrat)
 
 Xenocrat is an orbital mechanics simulator written in Haskell.
 
