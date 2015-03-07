@@ -13,37 +13,37 @@ maintainer:          tobias@markus-regensburg.de
 stability:           Experimental
 homepage:            https://github.com/hesiod/xenocrat
 bug-reports:         https://github.com/hesiod/xenocrat/issues
-copyright:           (c) 2015 Tobias Markus
+copyright:           Copyright © 2015 Tobias Markus
 category:            Simulation
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
-  ghc-options:         -threaded -Wall -O2
-  exposed-modules:     Common, Constants, Physics
+  ghc-options:       -threaded -Wall
+  exposed-modules:   Common, Constants, Physics
   -- other-modules:
-  other-extensions:    TypeFamilies
-  build-depends:       base >=4.7 && <4.8, units, units-defs, vector-space, vector-space-opengl, OpenGL, deepseq
-  hs-source-dirs:      src/lib
-  default-language:    Haskell2010
+  other-extensions:  TypeFamilies
+  build-depends:     base >=4.7 && <4.8, units, units-defs, vector-space, vector-space-opengl, OpenGL, deepseq
+  hs-source-dirs:    src/lib
+  default-language:  Haskell2010
 
 executable xenocrat
-  ghc-options:         -threaded -Wall -O2
-  main-is:             Main.hs
-  other-modules:       RenderGL, GL, GLHelper, Simulation
+  ghc-options:       -threaded -Wall
+  main-is:           Main.hs
+  other-modules:     RenderGL, GL, GLHelper, Simulation
   -- other-extensions:
-  build-depends:       base >=4.7 && <4.8, xenocrat, vector-space, vector-space-opengl, OpenGL, GLFW-b, GLUtil, linear, deepseq, suspend, timers, parallel, units, units-defs, split, file-embed, bytestring, stringsearch, containers, template-haskell, th-lift, th-lift-instances
-  hs-source-dirs:      src/exec
-  default-language:    Haskell2010
+  build-depends:     base >=4.7 && <4.8, xenocrat, vector-space, vector-space-opengl, OpenGL >= 2.11.0.0, GLFW-b, GLUtil, linear, deepseq, suspend, timers, parallel, units, units-defs, split, file-embed, bytestring, stringsearch, containers, template-haskell, th-lift, th-lift-instances, array
+  hs-source-dirs:    src/exec
+  default-language:  Haskell2010
 
 test-suite tests
-  type:             exitcode-stdio-1.0
-  main-is:          Test.hs
-  hs-source-dirs:   src, test
-  build-depends:    base >=4.7 && <4.8, xenocrat, QuickCheck, test-framework-quickcheck2
-  default-language: Haskell2010
+  type:              exitcode-stdio-1.0
+  main-is:           Test.hs
+  hs-source-dirs:    test
+  build-depends:     base >=4.7 && <4.8, xenocrat, QuickCheck, test-framework-quickcheck2
+  default-language:  Haskell2010
 
 source-repository head
-  type:             git
-  location:         git://github.com/hesiod/xenocrat.git
+  type:              git
+  location:          git://github.com/hesiod/xenocrat.git
