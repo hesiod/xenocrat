@@ -1,14 +1,15 @@
-#version 440 core
+#version 450 core
 
 #insert noise3D
 
 layout(triangles, equal_spacing, cw) in;
 in vec3 tctrl_position[];
+out vec3 teval_position;
+out vec3 teval_normal;
 uniform mat4 proj;
 uniform mat4 model;
 uniform mat4 view;
 uniform float zoom;
-uniform float noisiness;
 uniform vec3 origin;
 
 vec3 to_polar(const vec3 c)
@@ -26,18 +27,25 @@ vec3 to_cartesian(const vec3 p)
 	      p.x * cos(p.y));
 }
 
-float fBm(const vec3 v, const int octaves, float frequency, const float gain, const float lacunarity)
+float fBm(out vec3 normal, const vec3 v, const float radius, const int octaves, float frequency, const float gain, const float lacunarity)
 {
-  //for each pixel, get the value
   float rv = 0.0;
+  normal = vec3(0,0,0);
   float amplitude = gain;
 
   for (int i = 0; i < octaves; ++i)
     {
-      rv += snoise(v * frequency) * amplitude;
+      vec3 grad;
+      vec3 x = v * frequency;
+      float factor = snoise(x, grad) * amplitude;
+      rv += factor;
+      normal += grad * amplitude;
+      //grad /= (radius + factor);
+      //normal += amplitude * (grad - dot(grad, x) * x);
       frequency *= lacunarity;
       amplitude *= gain;
     }
+  //normal = normalize(v - normal);
   return rv;
 }
 
@@ -47,7 +55,13 @@ void main()
 		     gl_TessCoord.y * tctrl_position[1] +
 		     gl_TessCoord.z * tctrl_position[2]);
   vec3 po = to_polar(p) - origin;
-  po.x += fBm(po, 3, 1.5, 0.65, 1.8715) * noisiness;
+  //po.x += fBm(teval_normal, p, po.x, 16, 0.35, 0.6, 1.8715) * 0.2;
+  float s = 0.2;
+  po.x += snoise(p, teval_normal) * s;
+  teval_normal /= po.x;
+  mat3 normalM = mat3(transpose(inverse(proj * view * model)));
+  teval_normal = normalize(normalM * (p - s * (teval_normal - dot(teval_normal, p) * p)));
   vec3 noisy = to_cartesian(po) + origin;
   gl_Position = proj * view * model * vec4(noisy / zoom, 1);
+  teval_position = vec3(gl_Position);
 }

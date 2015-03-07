@@ -8,7 +8,7 @@ import Instances.TH.Lift ()
 import Foreign.C.Types (CFloat, CDouble)
 
 import Prelude hiding (sequence)
-import Graphics.GLUtil (Word32)
+import Data.Word
 import Control.Arrow
 import Control.Monad (replicateM)
 import Data.Metrology.SI.Poly

@@ -2,7 +2,6 @@ module GLHelper where
 
 import Graphics.Rendering.OpenGL
 import Graphics.GLUtil
-import Linear.V3
 import Data.ByteString
 
 black, white, blue, red, green :: Color4 GLfloat

@@ -19,8 +19,6 @@ import Graphics.GLUtil.Camera3D
 import Graphics.Rendering.OpenGL
 import qualified Graphics.UI.GLFW as G
 import System.Exit
-import Foreign.Storable
-import Data.Array.Storable
 
 import Constants
 import Common
@@ -62,10 +60,11 @@ reshapeC screen _ w h = do
 windowHints :: IO ()
 windowHints =
   mapM_ G.windowHint [ G.WindowHint'Samples 16,
+                       G.WindowHint'DepthBits 16,
                        G.WindowHint'Decorated False,
                        G.WindowHint'OpenGLProfile G.OpenGLProfile'Core,
                        G.WindowHint'ContextVersionMajor 4,
-                       G.WindowHint'ContextVersionMinor 4]
+                       G.WindowHint'ContextVersionMinor 5]
 
 init :: (G.Window -> IO ()) -> IO ()
 init main = do
@@ -73,7 +72,7 @@ init main = do
   successfulInit <- G.init
   if successfulInit then do
     windowHints
-    mw <- G.createWindow 640 480 "xenocrat" Nothing Nothing
+    mw <- G.createWindow 1024 768 "xenocrat" Nothing Nothing
     case mw of Nothing -> do
                 G.terminate
                 exitFailure
@@ -97,8 +96,8 @@ glMain = GL.init (\window -> do
                setAttrib sp "position" ToFloat $ VertexArrayDescriptor 3 Float 0 offset0
     crossSP <- buildShader [passthroughVS, crossGS, defaultFS] prepare
     vectorSP <- buildShader [defaultVS, vectorGS, defaultFS] prepare
-    planetSP <- buildShader [planetVS, planetTCS, planetTES, defaultFS] prepare
-    crossB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 DT]
+    planetSP <- buildShader [planetVS, planetTCS, planetTES, planetFS] prepare
+    crossB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 DT, V3 1 1 1]
     crossV <- setup crossSP
     planetB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 DT]
     planetV <- setup planetSP
@@ -110,7 +109,7 @@ glMain = GL.init (\window -> do
 
     bds <- newIORef [earth, moon, sun]
     screen <- newIORef (1024, 768)
-    cam <- newIORef (fpsCamera :: Camera DT)
+    cam <- newIORef (dolly (V3 0 0 1) fpsCamera :: Camera DT)
     patchVertices $= 3
     lineWidth $= 0.1
     let display = displayState sbv cam bds screen
@@ -131,6 +130,7 @@ displayState :: MSBV -> IORef (Camera DT) -> IORef (State SI (Pair FT)) -> IORef
 displayState sbv cam bds screen w = forever $ do
   blend $= Enabled
   blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
+  depthFunc $= Just Less
   clearColor $= blue
   clear [ColorBuffer, DepthBuffer, StencilBuffer]
 
@@ -145,37 +145,34 @@ displayState sbv cam bds screen w = forever $ do
       vB = vBs ! ArrayBuffer
       mkRot axis rad = m33_to_m44 . fromQuaternion $ axisAngle axis rad
       arrowrot = mkRot (V3 0 0 1) (deg2rad 50) :: M44 DT
-      look = Linear.lookAt (V3 0 0 1) (V3 0 0 0) (V3 0 1 0)
-      view = look !*! camMatrix camera
-      near = 0.01
+      model = camMatrix camera
+      view = Linear.lookAt (V3 0 0 0) (V3 0 0 (-1)) (V3 0 1 0) :: M44 DT
+      near = 0.0001
       far = 10
       fov = 0.8
       ar = uncurry (/) scr
       proj = Linear.perspective fov ar near far
       arrowscale = 0.6 :: DT
       zoom = 3e11 :: DT
-      zoomP = 10 :: DT
-      eye = eye4 :: M44 DT
+      zoomP = 1 :: DT
       tessI = 8*8 :: DT
       tessO = 8*8 :: DT
-      noisiness = 0.3 :: DT
 
   currentProgram $= Just (program cS)
   setUniform cS "view" view
   setUniform cS "proj" proj
-  setUniform cS "model" eye
+  setUniform cS "model" model
   bindBuffer ArrayBuffer $= Just cB
-  withVAO cV $ drawArrays Points 0 1
+  withVAO cV $ drawArrays Points 0 2
 
   currentProgram $= Just (program pS)
   setUniform pS "view" view
   setUniform pS "proj" proj
-  setUniform pS "model" eye
+  setUniform pS "model" model
   setUniform pS "zoom" zoomP
-  setUniform pS "noisiness" noisiness
   setUniform pS "tess_inner" tessI
   setUniform pS "tess_outer" tessO
-  setUniform pS "origin" (V3 0 0 (0::DT))
+  setUniform pS "origin" $ V3 0 0 (0::DT)
   let vertsI = fmap realToFrac <$> icosahedronTriangles :: [V3 DT]
   bindBuffer ArrayBuffer $= Just pB
   replaceBuffer ArrayBuffer vertsI
@@ -184,7 +181,7 @@ displayState sbv cam bds screen w = forever $ do
   currentProgram $= Just (program vS)
   setUniform vS "view" view
   setUniform vS "proj" proj
-  setUniform vS "model" eye
+  setUniform vS "model" model
   setUniform vS "zoom" zoom
   setUniform vS "arrowrot" arrowrot
   setUniform vS "arrowscale" arrowscale
