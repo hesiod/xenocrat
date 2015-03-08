@@ -1,6 +1,7 @@
 # The MIT License
 
-The MIT License applies to webgl-noise (as found in src/shader/glsl-noise), distributed [on GitHub](https://github.com/ashima/webgl-noise).
+The MIT License applies to webgl-noise (as found in src/shader/glsl-noise),
+distributed [on GitHub](https://github.com/ashima/webgl-noise).
 A [pull request](https://github.com/ashima/webgl-noise/pull/13) by GitHub user [`JcBernack`](https://github.com/JcBernack)
 is incorporated.
 
