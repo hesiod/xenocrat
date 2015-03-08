@@ -25,5 +25,5 @@ void main()
     float spec_ang = max(dot(half_dir, teval_normal), 0.0);
     spec = pow(spec_ang, 16.0);
   }
-  outColor = vec4(ambient + lambertian * diffuse + spec * specular, 1.0);
+  outColor = vec4(ambient + l * diffuse + spec * specular, 1.0);
 }
