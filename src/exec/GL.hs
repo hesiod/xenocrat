@@ -143,35 +143,35 @@ displayState sbv cam bds screen w = forever $ do
       cB = cBs ! ArrayBuffer
       pB = pBs ! ArrayBuffer
       vB = vBs ! ArrayBuffer
+
+      zoom = recip 3e11 :: DT
+      arrowscale = 0.6 :: DT
+      tessI = 8*8 :: DT
+      tessO = 8*8 :: DT
+      noisiness = 0.2 :: DT
+
       mkRot axis rad = m33_to_m44 . fromQuaternion $ axisAngle axis rad
       arrowrot = mkRot (V3 0 0 1) (deg2rad 50) :: M44 DT
+      scaleM = m33_to_m44 (eye3 !!* zoom)
       model = camMatrix camera
-      view = Linear.lookAt (V3 0 0 0) (V3 0 0 (-1)) (V3 0 1 0) :: M44 DT
+      view = Linear.lookAt (V3 0 0 0) (V3 0 0 (-1)) (V3 0 1 0)
       near = 0.0001
       far = 10
       fov = 0.8
       ar = uncurry (/) scr
       proj = Linear.perspective fov ar near far
-      arrowscale = 0.6 :: DT
-      zoom = 3e11 :: DT
-      zoomP = 1 :: DT
-      tessI = 8*8 :: DT
-      tessO = 8*8 :: DT
+      transform = proj !*! view !*! model :: M44 DT
 
   currentProgram $= Just (program cS)
-  setUniform cS "view" view
-  setUniform cS "proj" proj
-  setUniform cS "model" model
+  setUniform cS "transform" transform
   bindBuffer ArrayBuffer $= Just cB
   withVAO cV $ drawArrays Points 0 2
 
   currentProgram $= Just (program pS)
-  setUniform pS "view" view
-  setUniform pS "proj" proj
-  setUniform pS "model" model
-  setUniform pS "zoom" zoomP
+  setUniform pS "transform" transform
   setUniform pS "tess_inner" tessI
   setUniform pS "tess_outer" tessO
+  setUniform pS "noisiness" noisiness
   setUniform pS "origin" $ V3 0 0 (0::DT)
   let vertsI = fmap realToFrac <$> icosahedronTriangles :: [V3 DT]
   bindBuffer ArrayBuffer $= Just pB
@@ -179,10 +179,7 @@ displayState sbv cam bds screen w = forever $ do
   withVAO pV $ drawArrays Patches 0 (fromIntegral $ length vertsI)
 
   currentProgram $= Just (program vS)
-  setUniform vS "view" view
-  setUniform vS "proj" proj
-  setUniform vS "model" model
-  setUniform vS "zoom" zoom
+  setUniform vS "transform" $ transform !*! scaleM
   setUniform vS "arrowrot" arrowrot
   setUniform vS "arrowscale" arrowscale
   s <- get bds

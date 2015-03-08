@@ -6,11 +6,10 @@ layout(triangles, equal_spacing, cw) in;
 in vec3 tctrl_position[];
 out vec3 teval_position;
 out vec3 teval_normal;
-uniform mat4 proj;
-uniform mat4 model;
-uniform mat4 view;
-uniform float zoom;
+uniform mat4 transform;
 uniform vec3 origin;
+
+uniform float noisiness;
 
 vec3 to_polar(const vec3 c)
 {
@@ -52,13 +51,11 @@ void main()
 		     gl_TessCoord.y * tctrl_position[1] +
 		     gl_TessCoord.z * tctrl_position[2]);
   vec3 po = to_polar(p) - origin;
-  float s = 0.2;
-  po.x += fBm(p, teval_normal, po.x, 16, 0.35, 0.6, 1.8715) * s;
-  //po.x += snoise(p, teval_normal) * s;
+  po.x += fBm(p, teval_normal, po.x, 16, 0.35, 0.6, 1.8715) * noisiness;
+  //po.x += snoise(p, teval_normal) * noisiness;
   teval_normal /= po.x;
-  mat3 normalM = mat3(transpose(inverse(proj * view * model)));
-  teval_normal = normalize(normalM * (p - s * (teval_normal - dot(teval_normal, p) * p)));
+  teval_normal = normalize(mat3(transform) * (p - noisiness * (teval_normal - dot(teval_normal, p) * p)));
   vec3 noisy = to_cartesian(po) + origin;
-  gl_Position = proj * view * model * vec4(noisy / zoom, 1);
+  gl_Position = transform * vec4(noisy, 1);
   teval_position = vec3(gl_Position);
 }

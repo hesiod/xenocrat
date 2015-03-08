@@ -24,7 +24,7 @@ import Common
 phi :: Floating a => a
 phi = (1 + sqrt 5) / 2
 silverRatio :: Floating a => a
-silverRatio = 1 / phi
+silverRatio = recip phi
 icosahedronTriangleArea :: Floating a => a
 icosahedronTriangleArea = sqrt 3
 
