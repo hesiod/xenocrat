@@ -94,9 +94,9 @@ glMain = GL.init (\window -> do
         setup sp = makeVAO $ do
                enableAttrib sp "position"
                setAttrib sp "position" ToFloat $ VertexArrayDescriptor 3 Float 0 offset0
-    crossSP <- buildShader [passthroughVS, crossGS, defaultFS] prepare
-    vectorSP <- buildShader [defaultVS, vectorGS, defaultFS] prepare
-    planetSP <- buildShader [planetVS, planetTCS, planetTES, planetFS] prepare
+    crossSP <- loadShaderProgramWithBS [passthroughVS, crossGS, defaultFS] prepare
+    vectorSP <- loadShaderProgramWithBS [defaultVS, vectorGS, defaultFS] prepare
+    planetSP <- loadShaderProgramWithBS [planetVS, planetTCS, planetTES, planetFS] prepare
     crossB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 DT, V3 1 1 1]
     crossV <- setup crossSP
     planetB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 DT]
