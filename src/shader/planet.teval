@@ -6,6 +6,7 @@ layout(triangles, equal_spacing, cw) in;
 in vec3 tctrl_position[];
 out vec3 teval_position;
 out vec3 teval_normal;
+out float displacement;
 uniform mat4 transform;
 uniform vec3 origin;
 
@@ -35,9 +36,7 @@ float fBm(const vec3 v, out vec3 normal, const float radius, const int octaves, 
   for (int i = 0; i < octaves; ++i)
   {
       vec3 grad;
-      vec3 x = v * frequency;
-      float factor = snoise(x, grad) * amplitude;
-      rv += factor;
+      rv += snoise(v * frequency, grad) * amplitude;
       normal += grad * amplitude;
       frequency *= lacunarity;
       amplitude *= gain;
@@ -51,8 +50,9 @@ void main()
 		     gl_TessCoord.y * tctrl_position[1] +
 		     gl_TessCoord.z * tctrl_position[2]);
   vec3 po = to_polar(p) - origin;
-  po.x += fBm(p, teval_normal, po.x, 16, 0.35, 0.6, 1.8715) * noisiness;
-  //po.x += snoise(p, teval_normal) * noisiness;
+  displacement = fBm(p, teval_normal, po.x, 32, 0.35, 0.6, 1.8715) * noisiness;
+  po.x += displacement;
+  //displacement = snoise(p, teval_normal) * noisiness;
   teval_normal /= po.x;
   teval_normal = normalize(mat3(transform) * (p - noisiness * (teval_normal - dot(teval_normal, p) * p)));
   vec3 noisy = to_cartesian(po) + origin;

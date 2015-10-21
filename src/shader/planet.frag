@@ -2,16 +2,17 @@
 
 in vec3 teval_position;
 in vec3 teval_normal;
+in float displacement;
 out vec4 outColor;
 
 uniform mat4 transform;
 
 void main()
 {
-  vec3 light = vec3(1.0, 1.0, 1.0);
+  vec3 light = vec3(2.0, 2.0, 2.0);
   vec3 ambient = vec3(0.2, 0.2, 0.2);
-  vec3 diffuse = vec3(0.3, 0.0, 0.0);
-  vec3 specular = vec3(0.5, 0.5, 0.5);
+  vec3 diffuse = mix(vec3(0.0, 0.0, 0.7), vec3(0.0, 0.7, 0.0), 0.5 + 2.5 * displacement);
+  vec3 specular = vec3(0.2, 0.2, 0.2);
   //vec3 teval_normal = normalize(cross(dFdxFine(teval_position), dFdyFine(teval_position)));
   vec3 light_world = vec3(transform * vec4(light, 1.0));
   vec3 light_dir = normalize(light_world - teval_position);

@@ -2,11 +2,13 @@
 
 module GL where
 
+import Control.Concatenative
 import Control.DeepSeq
 import Control.Monad
 import Control.Concurrent
 import Control.Applicative
 import Data.IORef
+import Data.Bool
 import Data.VectorSpace
 import Data.Metrology.Vector
 import Data.Metrology.Show()
@@ -67,22 +69,7 @@ windowHints =
                        G.WindowHint'ContextVersionMinor 5]
 
 init :: (G.Window -> IO ()) -> IO ()
-init main = do
-  G.setErrorCallback (Just errorC)
-  successfulInit <- G.init
-  if successfulInit then do
-    windowHints
-    mw <- G.createWindow 1024 768 "xenocrat" Nothing Nothing
-    case mw of Nothing -> do
-                G.terminate
-                exitFailure
-               Just window -> do
-                G.makeContextCurrent mw
-                main window
-                G.destroyWindow window
-                G.terminate
-                exitSuccess
-  else exitFailure
+init main = G.setErrorCallback (Just errorC) >> G.init >>= bool exitFailure (windowHints >> G.createWindow 1024 768 "xenocrat" Nothing Nothing >>= maybe (G.terminate >> exitFailure) (triM_ (G.makeContextCurrent . Just) main G.destroyWindow >=> const (G.terminate >> exitSuccess)))
 
 data ProgramIdentifier = Cross | Planet | Vector deriving (Ord, Eq)
 type SBV = (ShaderProgram, Map BufferTarget BufferObject , VAO)
@@ -91,9 +78,7 @@ type MSBV = Map ProgramIdentifier SBV
 glMain :: forall v s. (ConformingVector v, s ~ Scalar v, s ~ FT, v ~ (FT, FT)) => IO ()
 glMain = GL.init (\window -> do
     let prepare p = bindFragDataLocation p "outColor" $= 0
-        setup sp = makeVAO $ do
-               enableAttrib sp "position"
-               setAttrib sp "position" ToFloat $ VertexArrayDescriptor 3 Float 0 offset0
+        setup s = makeVAO $ enableAttrib s "position" >> setAttrib s "position" ToFloat (VertexArrayDescriptor 3 Float 0 offset0)
     crossSP <- loadShaderProgramWithBS [passthroughVS, crossGS, defaultFS] prepare
     vectorSP <- loadShaderProgramWithBS [defaultVS, vectorGS, defaultFS] prepare
     planetSP <- loadShaderProgramWithBS [planetVS, planetTCS, planetTES, planetFS] prepare
@@ -119,10 +104,7 @@ glMain = GL.init (\window -> do
     G.setWindowRefreshCallback window $ Just display
     G.setWindowSizeCallback window $ Just reshape
 
-    _ <- forkIO $ forever $ do
-           s <- readIORef bds
-           let s' = updateState (10 % Second :: Time SI s) s
-           s' `deepseq` writeIORef bds s'
+    _ <- forkIO . forever $ readIORef bds >>= writeIORef bds . force . updateState (10 % Second :: Time SI s)
     display window
     )
 
@@ -152,7 +134,7 @@ displayState sbv cam bds screen w = forever $ do
 
       mkRot axis rad = m33_to_m44 . fromQuaternion $ axisAngle axis rad
       arrowrot = mkRot (V3 0 0 1) (deg2rad 50) :: M44 DT
-      scaleM = m33_to_m44 (eye3 !!* zoom)
+      scaleM = m33_to_m44 (identity !!* zoom)
       model = camMatrix camera
       view = Linear.lookAt (V3 0 0 0) (V3 0 0 (-1)) (V3 0 1 0)
       near = 0.0001
