@@ -1,6 +1,8 @@
 module Main where
 
-import GL
+import GLInit
 
 main :: IO ()
-main = glMain
+main = do
+  putStrLn "hello"
+  glInit

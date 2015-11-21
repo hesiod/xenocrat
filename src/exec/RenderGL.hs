@@ -13,7 +13,6 @@ import Control.Arrow
 import Control.Monad (replicateM)
 import Data.Metrology.SI.Poly
 import Data.Metrology.Vector
-import Data.Traversable
 import Data.List
 import Data.Map (Map, (!))
 import qualified Data.Map as Map
@@ -38,14 +37,14 @@ THL.deriveLiftMany [''CFloat, ''CDouble, ''Linear.V3.V3]
 icosahedron :: [V3 FT]
 icosahedron = $( [| let b i = [ i, negate i ];
                           pm (V3 x y z) = sequenceA $ V3 (b x) (b y) (b z)
-                      in nub . concat . fmap pm $ [ V3 0 1 phi, V3 1 phi 0, V3 phi 0 1 ] |] )
+                      in nub . concatMap pm $ [ V3 0 1 phi, V3 1 phi 0, V3 phi 0 1 ] |] )
 
 triangleArea :: (Floating a) => [V3 a] -> a
 triangleArea (a:b:c:_) = 0.5 * norm $ (b - a) `cross` (c - a)
 triangleArea _ = undefined
 
 primitiveEquals :: Eq a => [a] -> [a] -> Bool
-a `primitiveEquals` b = a `elem` permutations b
+a `primitiveEquals` b = $( [| a `elem` permutations b |] )
 
 -- 'Golden Values': 1.902113032590307 1.7320508075688772 4.534567884457024
 icosahedronTriangles :: [V3 FT]
