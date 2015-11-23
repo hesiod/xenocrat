@@ -1,12 +1,10 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TypeOperators, ConstraintKinds #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TypeOperators, ConstraintKinds, ScopedTypeVariables #-}
 
 module GLInit where
 
 import Control.Concatenative
 import Control.DeepSeq
 import Control.Monad
-import Control.Concurrent
-import Control.Applicative
 import Data.IORef
 import Data.Bool
 import Data.VectorSpace
@@ -21,64 +19,54 @@ import Graphics.GLUtil.Camera3D
 import Graphics.Rendering.OpenGL
 import qualified Graphics.UI.GLFW as GLFW
 import System.Exit
+import Control.Concurrent
 import Control.Concurrent.Timer
+import Control.Concurrent.Suspend.Lifted
+import Foreign.Storable
 
 import Constants
 import Common
 
-import RenderGL
 import Simulation
 import GLHelper
 import Shaders
 
 import GL
 
-dollySpeed :: DT
-dollySpeed = 0.1
-rotateSpeed :: DT
+dollySpeed :: Floating a => a
+dollySpeed = recip 10
+rotateSpeed :: Integral a => a
 rotateSpeed = 1
-keyboardTab :: [(GLFW.Key, Camera DT -> Camera DT)]
-keyboardTab = doll ++ seq
+keyboardTab :: (Conjugate a, Integral a, RealFloat a, Epsilon a) => Map GLFW.Key (Camera a -> Camera a)
+keyboardTab = Map.fromList $ mov ++ rot
                   where
-                    list = [V3 [0] [dollySpeed, negate dollySpeed] [0], V3 [0] [0] [dollySpeed, negate dollySpeed], V3 [dollySpeed, negate dollySpeed] [0] [0]]
-                    dollKeys = [GLFW.Key'R, GLFW.Key'F, GLFW.Key'S, GLFW.Key'W, GLFW.Key'D, GLFW.Key'A]
-                    doll = zip dollKeys (fmap dolly $ concatMap sequenceA list)
+                    movKeys = [GLFW.Key'R, GLFW.Key'F, GLFW.Key'S, GLFW.Key'W, GLFW.Key'D, GLFW.Key'A]
                     rotKeys = [GLFW.Key'E, GLFW.Key'Q, GLFW.Key'Up, GLFW.Key'Down, GLFW.Key'Left, GLFW.Key'Right]
-                    seq = zip rotKeys $ do
+                    list = [V3 [0] [dollySpeed, negate dollySpeed] [0], V3 [0] [0] [dollySpeed, negate dollySpeed], V3 [dollySpeed, negate dollySpeed] [0] [0]]
+                    mov = zip movKeys $ dolly <$> concatMap sequenceA list
+                    rot = zip rotKeys $ do
                             f <- [roll, tilt, pan]
                             x <- [rotateSpeed, negate rotateSpeed]
                             return $ f x
-keyboard :: IORef (Camera DT) -> GLFW.KeyCallback
-keyboard _ window GLFW.Key'Escape _ _ _ = GLFW.setWindowShouldClose window True
-keyboard cam _ key _ GLFW.KeyState'Repeating _ = modifyIORef cam $ tab ! key
-    where
-      tab :: Map GLFW.Key (Camera DT -> Camera DT)
-      tab = Map.fromList keyboardTab
-keyboard _ _ _ _ _ _ = return ()
-keyboardC :: IORef (Camera DT) -> GLFW.KeyCallback
-keyboardC _ window GLFW.Key'Escape _ GLFW.KeyState'Pressed _ = GLFW.setWindowShouldClose window True
-keyboardC cam _ GLFW.Key'R _ GLFW.KeyState'Repeating _ = modifyIORef cam $ dolly (V3 0 dollySpeed 0)
-keyboardC cam _ GLFW.Key'F _ GLFW.KeyState'Repeating _ = modifyIORef cam $ dolly (V3 0 (-dollySpeed) 0)
-keyboardC cam _ GLFW.Key'A _ GLFW.KeyState'Repeating _ = modifyIORef cam $ dolly (V3 (-dollySpeed) 0 0)
-keyboardC cam _ GLFW.Key'D _ GLFW.KeyState'Repeating _ = modifyIORef cam $ dolly (V3 dollySpeed 0 0)
-keyboardC cam _ GLFW.Key'W _ GLFW.KeyState'Repeating _ = modifyIORef cam $ dolly (V3 0 0 (-dollySpeed))
-keyboardC cam _ GLFW.Key'S _ GLFW.KeyState'Repeating _ = modifyIORef cam $ dolly (V3 0 0 dollySpeed)
-keyboardC cam _ GLFW.Key'Q _ GLFW.KeyState'Repeating _ = modifyIORef cam $ roll (-rotateSpeed)
-keyboardC cam _ GLFW.Key'E _ GLFW.KeyState'Repeating _ = modifyIORef cam $ roll rotateSpeed
-keyboardC cam _ GLFW.Key'Up _ GLFW.KeyState'Repeating _ = modifyIORef cam $ tilt rotateSpeed
-keyboardC cam _ GLFW.Key'Down _ GLFW.KeyState'Repeating _ = modifyIORef cam $ tilt (-rotateSpeed)
-keyboardC cam _ GLFW.Key'Left _ GLFW.KeyState'Repeating _ = modifyIORef cam $ pan (-rotateSpeed)
-keyboardC cam _ GLFW.Key'Right _ GLFW.KeyState'Repeating _ = modifyIORef cam $ pan rotateSpeed
+keyboardC :: (Conjugate a, Integral a, RealFloat a, Epsilon a) => IORef (Camera a) -> GLFW.KeyCallback
+keyboardC _ window GLFW.Key'Escape _ _ _ = GLFW.setWindowShouldClose window True
+keyboardC cam _ key _ GLFW.KeyState'Repeating _ = modifyIORef cam $ keyboardTab ! key
 keyboardC _ _ _ _ _ _ = return ()
 
 errorC :: GLFW.ErrorCallback
 errorC _ = putStrLn
 
-reshapeC :: IORef (Screen DT) -> GLFW.WindowSizeCallback
+reshapeC :: Integral a => IORef (Screen a) -> GLFW.WindowSizeCallback
 reshapeC screen _ w h = do
   viewport $= (Position 0 0, Size (fromIntegral w) (fromIntegral h))
   screen $= (fromIntegral w, fromIntegral h)
   print (w, h)
+
+cursorC :: (Integral a, RealFloat a, Epsilon a) => IORef (Camera a) -> GLFW.CursorPosCallback --  Window -> Double -> Double -> IO ()
+cursorC cam _ x y = modifyIORef cam (tilt dy . pan dx)
+    where
+      dx = fromIntegral dx
+      dy = fromIntegral dy
 
 windowHints :: IO ()
 windowHints =
@@ -89,50 +77,59 @@ windowHints =
                        GLFW.WindowHint'ContextVersionMajor 4,
                        GLFW.WindowHint'ContextVersionMinor 5]
 
-glInit :: forall v s. (ConformingVector v, s ~ Scalar v, s ~ FT, v ~ (FT, FT)) => IO ()
-glInit = GLFW.setErrorCallback (Just errorC) >> GLFW.init >>= bool exitFailure (windowHints >> GLFW.createWindow 1024 768 "xenocrat" Nothing Nothing >>= maybe (GLFW.terminate >> exitFailure) (triM_ (GLFW.makeContextCurrent . Just) setup GLFW.destroyWindow >=> const (GLFW.terminate >> exitSuccess)))
+glInit :: IO ()
+glInit = init
     where
+      init = GLFW.setErrorCallback (Just errorC)
+             >> GLFW.init
+             >>= bool exitFailure init'
+      init' = windowHints
+              >> GLFW.createWindow 1024 768 "xenocrat" Nothing Nothing
+              >>= maybe (GLFW.terminate >> exitFailure)
+                  (triM_ (GLFW.makeContextCurrent . Just) setup GLFW.destroyWindow >=> const (GLFW.terminate >> exitSuccess))
       setup window = do
-        putStrLn "hello"
-        st <- glSetup window
-        let (_,cam, bds, scr) = st
+        st <- glSetup ([earth, moon, sun] :: State SI (Pair DT))
         GLFW.swapInterval 1
-        GLFW.setKeyCallback window $ Just $ keyboard cam
+        GLFW.setKeyCallback window $ Just $ keyboardC $ cam st
+        GLFW.setCursorPosCallback window $ Just $ cursorC $ cam st
         GLFW.setWindowRefreshCallback window $ Just $ displayState st
-        GLFW.setWindowSizeCallback window $ Just $ reshapeC scr
+        GLFW.setWindowSizeCallback window $ Just $ reshapeC $ screen st
 
         blend $= Enabled
         blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
         depthFunc $= Just Less
         clearColor $= blue
-        putStrLn "hello"
 
-        let interval = 1 % Second :: Time SI s --_ <- forkIO $
-        atomicModifyIORef' bds (\x -> (updateState interval x, ()))         --readIORef bds >>= writeIORef bds . force . updateState interval
+        let interval = 1 % Second -- :: Time SI s
+            delay = msDelay 100
+        timer <- repeatedTimer GLFW.postEmptyEvent delay
+        success <- repeatedRestart timer
+        unless success $ GLFW.terminate >> exitFailure
+        _ <- forkIO $ forever $ do
+               b <- readIORef $ bds st
+               writeIORef (bds st) . force . updateState interval $ b
         displayState st window
---      sc (_,_,_,s) = s
-
-
-glSetup :: forall v s. (ConformingVector v, s ~ Scalar v, s ~ FT, v ~ (FT, FT)) => GLFW.Window -> IO GLState
-glSetup window = do
+--(Storable a, RealFloat a, Epsilon a, Conjugate a, Fractional (Scalar a), Fractional (Scalar (Scalar a)), VectorSpace a, VectorSpace (Scalar a)) =>
+glSetup :: forall a v. State SI v -> IO (GLState a)
+glSetup b = do
     let prepare p = bindFragDataLocation p "outColor" $= 0
         setup s = makeVAO $ enableAttrib s "position" >> setAttrib s "position" ToFloat (VertexArrayDescriptor 3 Float 0 offset0)
     crossSP <- loadShaderProgramWithBS [passthroughVS, crossGS, defaultFS] prepare
     vectorSP <- loadShaderProgramWithBS [defaultVS, vectorGS, defaultFS] prepare
     planetSP <- loadShaderProgramWithBS [planetVS, planetTCS, planetTES, planetFS] prepare
-    crossB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 DT, V3 1 1 1]
+    crossB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 a, V3 1 1 1]
     crossV <- setup crossSP
-    planetB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 DT]
+    planetB <- makeBuffer ArrayBuffer [V3 0 0 0 :: V3 a]
     planetV <- setup planetSP
-    vectorB <- makeBuffer ArrayBuffer (replicate 6 $ V3 0 0 0 :: [V3 DT])
+    vectorB <- makeBuffer ArrayBuffer (replicate 6 $ V3 0 0 0 :: [V3 a])
     vectorV <- setup vectorSP
     let sbv = Map.fromList [(Cross, (crossSP, Map.fromList [(ArrayBuffer, crossB)], crossV)),
                             (Vector, (vectorSP, Map.fromList [(ArrayBuffer, vectorB)], vectorV)),
                             (Planet, (planetSP, Map.fromList [(ArrayBuffer, planetB)], planetV))] :: MSBV
 
-    bds <- newIORef [earth, moon, sun]
+    bds <- newIORef b
     screen <- newIORef (1024, 768)
-    cam <- newIORef (dolly (V3 0 0 1) fpsCamera :: Camera DT)
+    cam <- newIORef (dolly (V3 0 0 1) fpsCamera :: Camera a)
     patchVertices $= 3
     lineWidth $= 0.1
-    return (sbv, cam, bds, screen)
+    return $ GLState sbv cam bds screen

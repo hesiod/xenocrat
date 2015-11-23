@@ -16,39 +16,42 @@ import Common
 
 type State l v = [Body l v]
 type Pair s = (s, s)
+type Triple s = (s, s, s)
+type TTriple s = Triple (Triple s)
 type Screen s = Pair s
 type Zoom s = Pair s
+--class (Constraint a, Constraint (Scalar a)) => Both a :: a :: Constraint
 
-class (Real s, Eq s, Show s, Floating s, MatrixComponent s, VertexComponent s) => ConformingScalar s where
-class (Eq v, HasBasis v, InnerSpace v, ConformingScalar (Scalar v)) => ConformingVector v where
+class (Real s, Eq s, Show s, Floating s, MatrixComponent s, VertexComponent s) => ConformingScalar s
+class (Eq v, HasBasis v, InnerSpace v, ConformingScalar (Scalar v)) => ConformingVector v
 
-instance ConformingScalar FT
-instance ConformingVector (Pair FT)
+--instance ConformingScalar FT
+--instance ConformingVector (Pair FT)
 
-scaleCoordinates :: (ConformingVector v, s ~ Scalar v, ConformingScalar sn) => Screen sn -> s -> v -> (sn, sn)
-scaleCoordinates scr zoom v = (c/x, d/y)
+scaleCoordinates :: forall s v sn. (Real s, ConformingVector v, ConformingScalar (Scalar v), ConformingScalar sn) => Screen sn -> Scalar v -> v -> Screen sn
+scaleCoordinates scr zoom v = ((realToFrac a) / (realToFrac $ fst scr), (realToFrac b) / (realToFrac $ snd scr))
     where
-      cv :: (ConformingScalar s, ConformingScalar sn) => (s, s) -> (sn, sn)
-      cv = realToFrac *** realToFrac
-      (x, y) = cv scr
-      (a:b:_) = map snd . decompose . (^/zoom) $ v
-      (c, d) = cv (a, b)
+      v' = v ^/ zoom
+      l = take 2 . map snd . decompose $ v'
+      (a:b:_) = l
 
-scaleState :: forall v s sn vx vex3. (ConformingVector v, s ~ Scalar v, s ~ FT, ConformingScalar sn, vx ~ (sn, sn, sn), vex3 ~ (vx, vx, vx)) =>
-              Screen sn -> Zoom s -> State SI v -> [vex3]
+scaleState :: forall v sn. (ConformingVector v, ConformingScalar sn) =>
+              Screen sn -> Zoom (Scalar v) -> State SI v -> [TTriple sn]
 scaleState scr zoom = map scaleBody
     where
-      (zoomR, zoomV) = zoom
-      scaleBody :: Body SI v -> vex3
+      scaleBody :: Body SI v -> TTriple sn
       scaleBody ref = (veR, veV, veA)
           where
-            fac = 1/0.3 :: s
-            vV :: (ConformingVector vv, s ~ Scalar vv, s ~ FT) => s -> vv -> (sn, sn, sn)
+            fac = recip 0.3 :: Scalar v
+            vV :: Scalar v -> v -> Triple sn
             vV z v = let p = scaleCoordinates scr z v :: Pair sn;
                      in (fst p, snd p, 0)
-            veR = vV zoomR (pos ref # Meter)
-            veV = vV zoomV (vel ref # (Meter :/ Second))
-            veA = vV (zoomV*fac) (vel ref # (Meter :/ Second))
+            veR = let zm = fst zoom
+                  in vV zm (pos ref # Meter)
+            veV = let zm = snd zoom
+                  in vV zm (vel ref # (Meter :/ Second))
+            veA = let zm = snd zoom * fac
+                  in vV zm (vel ref # (Meter :/ Second))
 
-updateState :: forall v s. (NFData v, ConformingVector v, s ~ Scalar v, s ~ FT) => Time SI s -> State SI v -> State SI v
+updateState :: (NFData v, NFData (Scalar v), ConformingVector v) => Time SI (Scalar v) -> State SI v -> State SI v
 updateState dt st = parMap rdeepseq (\b -> let st' = filter (/= b) st in dP b st' dt) st

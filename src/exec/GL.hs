@@ -1,59 +1,61 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TypeOperators, ConstraintKinds #-}
+{-# LANGUAGE ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TypeOperators, ConstraintKinds #-}
 
 module GL where
 
-import Control.Concatenative
-import Control.DeepSeq
 import Control.Monad
-import Control.Concurrent
-import Data.IORef
-import Data.Bool
-import Data.VectorSpace
-import Data.Map (Map, (!))
+import Data.Map ((!))
 import Linear
 import Graphics.GLUtil
 import Graphics.GLUtil.Camera3D
+import Data.VectorSpace
 import Graphics.Rendering.OpenGL
+import Foreign.Storable
 import qualified Graphics.UI.GLFW as GLFW
 
 import Common
 
 import RenderGL
 import GLHelper
+import Simulation
 
-displayState :: GLState -> GLFW.WindowRefreshCallback
+--instance AsUniform Int
+--instance Uniform Int
+--instance AsUniform a => AsUniform (V3 a)
+
+displayState :: forall a. (AsUniform (V3 a), AsUniform (M44 a), Conjugate a, Epsilon a, Storable a, AsUniform a, RealFloat a, VectorSpace a, Fractional (Scalar a)) => GLState a -> GLFW.WindowRefreshCallback
 displayState state w = forever $ do
-  let (sbv, cam, bds, screen) = state
-
   clear [ColorBuffer, DepthBuffer, StencilBuffer]
 
-  camera <- get cam
-  scr <- get screen
+  camera <- get $ cam state
+  scr <- get $ screen state
+  s <- get $ bds state
 
-  let (cS, cBs, cV) = sbv ! Cross
+  let sbv = msbv state
+      (cS, cBs, cV) = sbv ! Cross
       (pS, pBs, pV) = sbv ! Planet
       (vS, vBs, vV) = sbv ! Vector
       cB = cBs ! ArrayBuffer
       pB = pBs ! ArrayBuffer
       vB = vBs ! ArrayBuffer
 
-      zoom = recip 3e11 :: DT
-      arrowscale = 0.6 :: DT
-      tessI = 8*8 :: DT
-      tessO = 8*8 :: DT
-      noisiness = 0.2 :: DT
+      zoom = recip 3e11 :: a
+      arrowscale = 3 * recip 5 :: a
+      tessI = 8*8 :: a
+      tessO = 8*8 :: a
+      noisiness = 0.2 :: a
 
       mkRot axis rad = m33_to_m44 . fromQuaternion $ axisAngle axis rad
-      arrowrot = mkRot (V3 0 0 1) (deg2rad 50) :: M44 DT
+      arrowrot = mkRot (V3 0 0 1) (deg2rad 50) :: M44 a
       scaleM = m33_to_m44 (identity !!* zoom)
       model = camMatrix camera
       view = Linear.lookAt (V3 0 0 0) (V3 0 0 (-1)) (V3 0 1 0)
       near = 0.0001
       far = 10
       fov = 0.8
-      ar = uncurry (/) scr
+      scr' = uncurry fromIntegral scr :: Screen a
+      ar = uncurry (/) scr'
       proj = Linear.perspective fov ar near far
-      transform = proj !*! view !*! model :: M44 DT
+      transform = proj !*! view !*! model :: M44 a
 
   currentProgram $= Just (program cS)
   setUniform cS "transform" transform
@@ -65,8 +67,8 @@ displayState state w = forever $ do
   setUniform pS "tess_inner" tessI
   setUniform pS "tess_outer" tessO
   setUniform pS "noisiness" noisiness
-  setUniform pS "origin" $ V3 0 0 (0::DT)
-  let vertsI = fmap realToFrac <$> icosahedronTriangles :: [V3 DT]
+  setUniform pS "origin" $ V3 1 1 (1::a)
+  let vertsI = fmap realToFrac <$> icosahedronTriangles :: [V3 a]
   bindBuffer ArrayBuffer $= Just pB
   replaceBuffer ArrayBuffer vertsI
   withVAO pV $ drawArrays Patches 0 (fromIntegral $ length vertsI)
@@ -75,9 +77,7 @@ displayState state w = forever $ do
   setUniform vS "transform" $ transform !*! scaleM
   setUniform vS "arrowrot" arrowrot
   setUniform vS "arrowscale" arrowscale
-  s <- get bds
-  print s
-  let verts = fmap realToFrac <$> concatMap bodyVertices s :: [V3 DT]
+  let verts = fmap realToFrac <$> concatMap bodyVertices s :: [V3 a]
   bindBuffer ArrayBuffer $= Just vB
   replaceBuffer ArrayBuffer verts
   withVAO vV $ drawArrays Lines 0 (fromIntegral $ length verts)

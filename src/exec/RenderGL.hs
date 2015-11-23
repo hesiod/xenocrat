@@ -11,6 +11,7 @@ import Prelude hiding (sequence)
 import Data.Word
 import Control.Arrow
 import Control.Monad (replicateM)
+import Data.VectorSpace
 import Data.Metrology.SI.Poly
 import Data.Metrology.Vector
 import Data.List
@@ -34,7 +35,7 @@ THL.deriveLiftMany [''CFloat, ''CDouble, ''Linear.V3.V3]
 (±1, ±φ, 0)
 (±φ, 0, ±1)
 -}
-icosahedron :: [V3 FT]
+icosahedron :: (Eq a, Floating a) => [V3 a]
 icosahedron = $( [| let b i = [ i, negate i ];
                           pm (V3 x y z) = sequenceA $ V3 (b x) (b y) (b z)
                       in nub . concatMap pm $ [ V3 0 1 phi, V3 1 phi 0, V3 phi 0 1 ] |] )
@@ -47,7 +48,7 @@ primitiveEquals :: Eq a => [a] -> [a] -> Bool
 a `primitiveEquals` b = $( [| a `elem` permutations b |] )
 
 -- 'Golden Values': 1.902113032590307 1.7320508075688772 4.534567884457024
-icosahedronTriangles :: [V3 FT]
+icosahedronTriangles :: (Eq a, Floating a) => [V3 a]
 icosahedronTriangles = $( [| concat . filter (\x -> triangleArea x == icosahedronTriangleArea) . nubBy primitiveEquals . replicateM 3 $ icosahedron |] )
 
 makeIndices :: forall a i. (Ord a, Bounded i, Enum i) => [a] -> ([i], [a])
@@ -59,10 +60,10 @@ makeIndices = second (map fst . Map.toList) . discard3 . foldl reduce ([], Map.e
                                        then let i = m ! v in (i : indices, m, nextidx)
                                        else (nextidx : indices, Map.insert v nextidx m, succ nextidx)
 
-icosahedronIndices :: ([Word32], [V3 FT])
+icosahedronIndices :: (Eq a, Floating a, Ord a) => ([Word32], [V3 a])
 icosahedronIndices = $( [| makeIndices icosahedronTriangles |] )
 
-bodyVertices :: Body SI (FT, FT) -> [V3 FT]
+bodyVertices :: (Eq a, Floating a, VectorSpace a, Fractional (Scalar a)) => Body SI (a, a) -> [V3 a]
 bodyVertices b = [ V3 xr yr 0, V3 xv yv 0 ]
     where
       (xr, yr) = pos b # Meter

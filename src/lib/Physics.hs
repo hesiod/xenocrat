@@ -9,26 +9,26 @@ import Data.Metrology.SI.Poly
 import Common
 import Constants
 
-fG :: forall v s. (InnerSpace v, Floating s, s ~ Scalar v, s ~ FT) => Body SI v -> Body SI v -> Force SI v
+fG :: forall v. (InnerSpace v, Floating (Scalar v)) => Body SI v -> Body SI v -> Force SI v
 fG a b = dir |^*| f
     where
       dp = pos b |-| pos a
       m = gamma |*| mass a |*| mass b
       r = qMagnitudeSq dp
-      f = redim $ m |/| r :: Force SI s
+      f = redim $ m |/| r :: Force SI (Scalar v)
       dir = qNormalized dp
 --      dir = qNormalized $ pos a |.-.| pos b :: Qu '[] SI v
 
-fA :: (InnerSpace v, Floating s, s ~ Scalar v, s ~ FT) => Body SI v -> [Body SI v] -> Force SI v
+fA :: (InnerSpace v, Floating (Scalar v)) => Body SI v -> [Body SI v] -> Force SI v
 fA ref bodies = qSum . map (fG ref) $ bodies
 
-vA :: (InnerSpace v, Floating s, s ~ Scalar v, s ~ FT) => Body SI v -> [Body SI v] -> Time SI s -> Velocity SI v
+vA :: (InnerSpace v, Floating (Scalar v)) => Body SI v -> [Body SI v] -> Time SI (Scalar v) -> Velocity SI v
 vA ref bodies dt = vel ref |+| v
     where
       ffA = fA ref bodies
       v = (ffA |^*| dt) |^/| mass ref
 
-dP :: (InnerSpace v, Floating s, s ~ Scalar v, s ~ FT) => Body SI v -> [Body SI v] -> Time SI s -> Body SI v
+dP :: (InnerSpace v, Floating (Scalar v)) => Body SI v -> [Body SI v] -> Time SI (Scalar v) -> Body SI v
 dP ref bodies dt = ref { vel = v1, pos = (vAvg |^*| dt) |+| pos ref }
     where
       v0 = vel ref
