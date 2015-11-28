@@ -2,7 +2,10 @@ machine:
   ghc:
     version: 7.10.2
 dependencies:
+  cache_directories:
+    - .cabal-sandbox
   pre:
+    - sudo apt-get update; sudo apt-get install libXxf86vm-dev
     - cabal update
     - cabal sandbox init
     - cabal install cabal-install cpphs
