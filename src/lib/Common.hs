@@ -1,9 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE FlexibleInstances, DeriveGeneric, DeriveAnyClass, StandaloneDeriving, TypeFamilies, FlexibleContexts, UndecidableInstances #-}
-
+{-# LANGUAGE GADTs, FlexibleInstances, DeriveGeneric, DeriveAnyClass, StandaloneDeriving, TypeFamilies, FlexibleContexts, UndecidableInstances #-}
+-- Safe
 module Common where
 
-import Data.VectorSpace
 import GHC.Generics (Generic)
 import Control.DeepSeq
 import Data.Metrology.SI.Poly
@@ -14,9 +13,12 @@ type FT = GLfloat
 type DT = GLdouble
 
 -- pos should be a QPoint
-data Body l v = Body { mass :: !(Mass l (Scalar v)), pos :: !(Length l v), vel :: !(Velocity l v) } deriving (Generic)
-deriving instance (NFData v, NFData (Scalar v)) => NFData (Body l v)
+data Body l f a = Body { mass :: Mass l a,
+                         pos :: Length l (f a),
+                         vel :: Velocity l (f a) }
+                  deriving (Generic)
+deriving instance (NFData a, NFData (f a)) => NFData (Body l f a)
 deriving instance Generic (Qu u l v)
 deriving instance NFData v => NFData (Qu u l v)
-deriving instance (Eq v, Eq (Scalar v)) => Eq (Body l v)
-deriving instance (Show (Mass l (Scalar v)), Show (Length l v), Show (Velocity l v)) => Show (Body l v)
+deriving instance (Eq (f a), Eq a, Functor f) => Eq (Body l f a)
+deriving instance (Show (Mass l a), Show (Length l (f a)), Show (Velocity l (f a))) => Show (Body l f a)

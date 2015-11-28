@@ -1,37 +1,31 @@
-{-# LANGUAGE ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TypeOperators, ConstraintKinds #-}
+{-# LANGUAGE ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances, TypeFamilies, FlexibleContexts, TypeOperators, ConstraintKinds #-}
 
 module GL where
 
 import Control.Monad
 import Data.Map ((!))
+import Data.IORef
+import Data.Foldable
 import Linear
 import Graphics.GLUtil
 import Graphics.GLUtil.Camera3D
-import Data.VectorSpace
 import Graphics.Rendering.OpenGL
 import Foreign.Storable
 import qualified Graphics.UI.GLFW as GLFW
 
-import Common
-
 import RenderGL
 import GLHelper
-import Simulation
 
---instance AsUniform Int
---instance Uniform Int
---instance AsUniform a => AsUniform (V3 a)
-
-displayState :: forall a. (AsUniform (V3 a), AsUniform (M44 a), Conjugate a, Epsilon a, Storable a, AsUniform a, RealFloat a, VectorSpace a, Fractional (Scalar a)) => GLState a -> GLFW.WindowRefreshCallback
-displayState state w = forever $ do
+displayState :: forall t f a. (Storable (f a), Foldable t, AsUniform a, AsUniform (V3 a), AsUniform (M44 a), Conjugate a, Epsilon a, Storable a, RealFloat a) =>
+                IORef (t (f a)) -> IORef (V2 Int) -> MSBV -> IORef (Camera a) -> GLFW.WindowRefreshCallback
+displayState verts screen sbv cam w = forever $ do
   clear [ColorBuffer, DepthBuffer, StencilBuffer]
 
-  camera <- get $ cam state
-  scr <- get $ screen state
-  s <- get $ bds state
+  camera <- get cam
+  scr <- get screen
+  bds <- get verts
 
-  let sbv = msbv state
-      (cS, cBs, cV) = sbv ! Cross
+  let (cS, cBs, cV) = sbv ! Cross
       (pS, pBs, pV) = sbv ! Planet
       (vS, vBs, vV) = sbv ! Vector
       cB = cBs ! ArrayBuffer
@@ -52,8 +46,8 @@ displayState state w = forever $ do
       near = 0.0001
       far = 10
       fov = 0.8
-      scr' = uncurry fromIntegral scr :: Screen a
-      ar = uncurry (/) scr'
+      (V2 ax ay) = fmap fromIntegral scr :: V2 a
+      ar = ax / ay
       proj = Linear.perspective fov ar near far
       transform = proj !*! view !*! model :: M44 a
 
@@ -77,10 +71,9 @@ displayState state w = forever $ do
   setUniform vS "transform" $ transform !*! scaleM
   setUniform vS "arrowrot" arrowrot
   setUniform vS "arrowscale" arrowscale
-  let verts = fmap realToFrac <$> concatMap bodyVertices s :: [V3 a]
   bindBuffer ArrayBuffer $= Just vB
-  replaceBuffer ArrayBuffer verts
-  withVAO vV $ drawArrays Lines 0 (fromIntegral $ length verts)
+  replaceBuffer ArrayBuffer $ toList bds
+  withVAO vV $ drawArrays Lines 0 (fromIntegral $ length bds)
 
   throwError
 

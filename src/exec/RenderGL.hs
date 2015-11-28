@@ -11,15 +11,11 @@ import Prelude hiding (sequence)
 import Data.Word
 import Control.Arrow
 import Control.Monad (replicateM)
-import Data.VectorSpace
-import Data.Metrology.SI.Poly
-import Data.Metrology.Vector
 import Data.List
 import Data.Map (Map, (!))
 import qualified Data.Map as Map
 import Linear
 import Linear.V3
-import Common
 
 phi :: Floating a => a
 phi = (1 + sqrt 5) / 2
@@ -41,7 +37,9 @@ icosahedron = $( [| let b i = [ i, negate i ];
                       in nub . concatMap pm $ [ V3 0 1 phi, V3 1 phi 0, V3 phi 0 1 ] |] )
 
 triangleArea :: (Floating a) => [V3 a] -> a
-triangleArea (a:b:c:_) = 0.5 * norm $ (b - a) `cross` (c - a)
+triangleArea (a:b:c:_) = let ab = b - a
+                             ac = c - a
+                         in 0.5 * norm (ab `cross` ac)
 triangleArea _ = undefined
 
 primitiveEquals :: Eq a => [a] -> [a] -> Bool
@@ -62,9 +60,3 @@ makeIndices = second (map fst . Map.toList) . discard3 . foldl reduce ([], Map.e
 
 icosahedronIndices :: (Eq a, Floating a, Ord a) => ([Word32], [V3 a])
 icosahedronIndices = $( [| makeIndices icosahedronTriangles |] )
-
-bodyVertices :: (Eq a, Floating a, VectorSpace a, Fractional (Scalar a)) => Body SI (a, a) -> [V3 a]
-bodyVertices b = [ V3 xr yr 0, V3 xv yv 0 ]
-    where
-      (xr, yr) = pos b # Meter
-      (xv, yv) = ((+xr) *** (+yr)) . ((*1e6) *** (*1e6)) $ vel b # Meter :/ Second
