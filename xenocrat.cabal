@@ -1,49 +1,55 @@
-name:                xenocrat
+name:                 xenocrat
 -- http://www.haskell.org/haskellwiki/Package_versioning_policy
--- PVP summary:      +-+------- breaking API changes
---                   | | +----- non-breaking API additions
---                   | | | +--- code changes with no API change
-version:             0.1.0.0
-synopsis:            Orbital Mechanics Simulator
-description:         Orbital Mechanics Simulator
-license:             GPL-3
-license-file:        LICENSE
-author:              Tobias Markus
-maintainer:          tobias@markus-regensburg.de
-stability:           Experimental
-homepage:            https://github.com/hesiod/xenocrat
-bug-reports:         https://github.com/hesiod/xenocrat/issues
-copyright:           Copyright © 2015 Tobias Markus
-category:            Simulation
-build-type:          Simple
-extra-source-files:  README.md
-cabal-version:       >=1.22
+-- PVP summary:       +-+------- breaking API changes
+--                    | | +----- non-breaking API additions
+--                    | | | +--- code changes with no API change
+version:              0.1.0.0
+synopsis:             Orbital Mechanics Simulator
+description:          Orbital Mechanics Simulator
+license:              GPL-3
+license-file:         LICENSE
+author:               Tobias Markus
+maintainer:           tobias@markus-regensburg.de
+stability:            Experimental
+homepage:             https://github.com/hesiod/xenocrat
+bug-reports:          https://github.com/hesiod/xenocrat/issues
+copyright:            Copyright © 2015 Tobias Markus
+category:             Simulation
+build-type:           Simple
+extra-source-files:   README.md
+cabal-version:        >=1.22
 
 library
-  ghc-options:       -threaded -rtsopts -Wall -O3 -with-rtsopts=-M1g
-  exposed-modules:   Common, Constants, Physics
+  ghc-options:        -threaded -rtsopts -Wall -O3 -with-rtsopts=-M1g
+  exposed-modules:    Common, Constants, Physics
+  default-extensions: ScopedTypeVariables, FlexibleContexts
   -- other-modules:
-  -- other-extensions:
-  build-depends:     base, units, units-defs, OpenGL, deepseq, linear, mtl
-  hs-source-dirs:    src/lib
-  default-language:  Haskell2010
+  other-extensions:   StandaloneDeriving, DeriveGeneric, DeriveAnyClass, UndecidableInstances, TemplateHaskell, TypeOperators, TypeFamilies
+  build-depends:      base, units, units-defs, OpenGL, deepseq, linear, mtl
+  hs-source-dirs:     src/lib
+  default-language:   Haskell2010
 
 executable xenocrat
-  ghc-options:       -threaded -rtsopts -Wall -O3 -with-rtsopts=-M1g
-  main-is:           Main.hs
-  other-modules:     RenderGL, GL, GLInit, GLHelper
-  other-extensions:  TemplateHaskell
-  build-depends:     base, xenocrat, OpenGL >= 2.11, GLFW-b, GLUtil, linear, deepseq, suspend, timers, units >= 1.18, units-defs, split, file-embed, bytestring, stringsearch, containers, th-lift, th-lift-instances, array, lens, concatenative, parallel, mtl
-  hs-source-dirs:    src/exec
-  default-language:  Haskell2010
+  ghc-options:        -threaded -rtsopts -Wall -O3 -with-rtsopts=-M1g
+  main-is:            Main.hs
+  default-extensions: ScopedTypeVariables, FlexibleContexts
+  other-extensions:   TemplateHaskell
+  other-modules:      RenderGL, GL, GLInit, GLHelper, Shaders
+  build-depends:      base, xenocrat, deepseq, suspend, timers, file-embed,
+                      lens, bytestring, stringsearch, array, containers,
+                      th-lift, th-lift-instances, concatenative, parallel, mtl,
+                      OpenGL >= 2.11, GLFW-b, GLUtil,
+                      linear, units >= 2.3, units-defs
+  hs-source-dirs:     src/exec
+  default-language:   Haskell2010
 
 test-suite tests
-  type:              exitcode-stdio-1.0
-  main-is:           Test.hs
-  hs-source-dirs:    test
-  build-depends:     base, xenocrat, QuickCheck, test-framework-quickcheck2
-  default-language:  Haskell2010
+  type:               exitcode-stdio-1.0
+  main-is:            Test.hs
+  hs-source-dirs:     test
+  build-depends:      base, xenocrat, QuickCheck, test-framework-quickcheck2
+  default-language:   Haskell2010
 
 source-repository head
-  type:              git
-  location:          git://github.com/hesiod/xenocrat.git
+  type:               git
+  location:           git://github.com/hesiod/xenocrat.git

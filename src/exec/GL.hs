@@ -1,5 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances, TypeFamilies, FlexibleContexts, TypeOperators, ConstraintKinds #-}
-
 module GL where
 
 import Control.Monad

@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE GADTs, FlexibleInstances, DeriveGeneric, DeriveAnyClass, StandaloneDeriving, TypeFamilies, FlexibleContexts, UndecidableInstances #-}
--- Safe
+{-# LANGUAGE StandaloneDeriving, DeriveGeneric, DeriveAnyClass, UndecidableInstances #-}
+
 module Common where
 
 import GHC.Generics (Generic)

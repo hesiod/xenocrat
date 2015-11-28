@@ -1,5 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes, FlexibleContexts, TemplateHaskell, FlexibleInstances, ConstraintKinds, TypeOperators, TypeFamilies, ScopedTypeVariables #-}
-
+{-# LANGUAGE TemplateHaskell, TypeOperators, TypeFamilies #-}
 module Constants where
 
 import qualified Data.Dimensions.SI as D

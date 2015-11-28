@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeFamilies, TypeOperators, ScopedTypeVariables, DataKinds, FlexibleContexts, ConstraintKinds #-}
-
 module Physics where
 
 import Control.Monad.Reader
@@ -10,7 +8,6 @@ import Data.Metrology.Poly
 import Data.Metrology.Linear
 import Linear.Metric
 import Linear.Affine
---import Data.Metrology.SI.PolyTypes
 import Common
 import Constants
 

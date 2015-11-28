@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE FlexibleInstances, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TypeOperators, ConstraintKinds, TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module RenderGL where
 

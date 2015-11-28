@@ -1,5 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes, TypeSynonymInstances, FlexibleInstances, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TypeOperators, ConstraintKinds #-}
-
 module GLInit where
 
 import Control.Monad.Reader
